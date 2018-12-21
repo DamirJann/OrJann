@@ -1,17 +1,22 @@
 #include <iostream>
 #include <fstream>
+#include <conio.h>
 #include <windows.h>
 using namespace std;
 
-const int hight = 4;
-const int width = 4;
+const int hight = 10;
+const int width = 10;
 
+#define KEY_UP 'W'
+#define KEY_DOWN 'S'
+#define KEY_LEFT 'A'
+#define KEY_RIGHT 'D'
 
 struct character{
-    int X;
     int Y;
+    int X;
 };
-bool check(int X, int Y, char**);
+void check(character&, character, char**);
 void movement(char&, character&, char **);
 void print_field(char **);
 
@@ -27,7 +32,7 @@ int main() {
         field[i] = new char [width];
     }
 
-    // ЗАПОЛНЕНИЕ МАССИВА
+    // ЗАПОЛНЕНИЕ МАССИВАd
     for (i = 0; i < hight; i++){
         for (j = 0; j < width; j++){
             cin_file >> field[i][j];
@@ -38,10 +43,12 @@ int main() {
     // СЧИТЫВАНИЕ ПЕРЕДВИЖЕНИЙ
     while (true){
         char direction;
-        cin >> direction;
+
+        print_field(field);
+        direction = toupper(getch());
+        //cin >> direction;
         movement(direction, hero, field);
         system("cls");
-        print_field(field);
         //cout << endl << endl;
 
     }
@@ -51,50 +58,36 @@ int main() {
 }
 
 
-bool check(int Y, int X, char **field){
-    if ((X < 0) || (X >= width) || (Y < 0) || (Y >= hight) || (field[Y][X] != '_')){
-        return false;
-    }
-    else{
-        return true;
+void check(character& old_rotate, character new_rotate, char **field){
+
+    if ((new_rotate.X >= 0) && (new_rotate.X < width) && (new_rotate.Y >= 0) && (new_rotate.Y < hight) && (field[new_rotate.Y][new_rotate.X] == '_')){
+        field[new_rotate.Y][new_rotate.X] = '!';
+        field[old_rotate.Y][old_rotate.X] = '_';
+        old_rotate = new_rotate;
+
     }
 }
 void movement(char& direction, character& hero, char **field){
-    switch (direction){
-        case 'a':
-            if (check(hero.Y, hero.X-1, field)){
-                field[hero.Y][hero.X] = '_';
-                field[hero.Y][hero.X-1] = '!';
-                hero.X--;
-            }
+    switch (direction) {
+        case KEY_LEFT:
+            check(hero, {hero.Y, hero.X - 1}, field);
             break;
 
-        case 'd':
-            if (check(hero.Y, hero.X+1, field)){
-                field[hero.Y][hero.X] = '_';
-                field[hero.Y][hero.X+1] = '!';
-                hero.X++;
-            }
+        case KEY_RIGHT:
+            check(hero, {hero.Y, hero.X + 1}, field);
             break;
 
-        case 'w':
-            if (check(hero.Y-1, hero.X, field)){
-                field[hero.Y][hero.X] = '_';
-                field[hero.Y-1][hero.X] = '!';
-                hero.Y--;
-            }
+        case KEY_UP:
+            check(hero, {hero.Y - 1, hero.X}, field);
             break;
 
-        case 's':
-            if (check(hero.Y+1, hero.X, field)){
-                field[hero.Y][hero.X] = '_';
-                field[hero.Y+1][hero.X] = '!';
-                hero.Y++;
-            }
+        case KEY_DOWN:
+            check(hero, {hero.Y + 1, hero.X}, field);
             break;
 
+        default:
+            break;
     }
-
 }
 
 void print_field(char **field){
