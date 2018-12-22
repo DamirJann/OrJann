@@ -11,52 +11,85 @@ const int width = 10;
 #define KEY_DOWN 'S'
 #define KEY_LEFT 'A'
 #define KEY_RIGHT 'D'
+#define ESCAPE 27
+
 
 struct character{
     int Y;
     int X;
 };
 void check(character&, character, char**);
-void movement(char&, character&, char **);
+void movement(int&, character&, char **);
 void print_field(char **);
+char get_direction();
 
 
 int main() {
     ifstream cin_file("input.txt");
+    ofstream cout_file("output.txt");
     int i, j;
     character hero = {0,0};
-
     // СОЗДАНИЕ ДВУМЕРНОГО МАССИВА
     char **field = new char* [hight];
     for (i = 0; i < hight; i++){
         field[i] = new char [width];
     }
 
-    // ЗАПОЛНЕНИЕ МАССИВАd
+    // ЗАПОЛНЕНИЕ МАССИВА
     for (i = 0; i < hight; i++){
         for (j = 0; j < width; j++){
             cin_file >> field[i][j];
         }
     }
-
-
     // СЧИТЫВАНИЕ ПЕРЕДВИЖЕНИЙ
-    while (true){
-        char direction;
-
+    bool not_escape = true;
+    while(not_escape){
         print_field(field);
-        direction = toupper(getch());
-        //cin >> direction;
-        movement(direction, hero, field);
-        system("cls");
-        //cout << endl << endl;
-
+        int direction = get_direction();
+        not_escape = (direction != ESCAPE);
+        if (not_escape) {
+            movement(direction, hero, field);
+            system("cls");
+        }
     }
-
 
     return 0;
 }
 
+
+char get_direction(){
+    int i = getch();
+
+    if (i == 224) {
+        i = getch();
+        switch (i) {
+
+            case 72:
+                return 'W';
+                break;
+
+            case 80:
+                return 'S';
+                break;
+
+            case 75:
+                return 'A';
+                break;
+
+            case 77:
+                return 'D';
+                break;
+
+            default:
+                break;
+        }
+    }
+    else{
+      return toupper(i);
+    }
+
+
+}
 
 void check(character& old_rotate, character new_rotate, char **field){
 
@@ -67,7 +100,7 @@ void check(character& old_rotate, character new_rotate, char **field){
 
     }
 }
-void movement(char& direction, character& hero, char **field){
+void movement(int& direction, character& hero, char **field){
     switch (direction) {
         case KEY_LEFT:
             check(hero, {hero.Y, hero.X - 1}, field);
