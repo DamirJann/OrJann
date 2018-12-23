@@ -18,7 +18,7 @@ struct character{
     int Y;
     int X;
 };
-void check(character&, character, char**);
+void check_move(character&, character, char**);
 void movement(int&, character&, char **);
 void print_field(char **);
 char get_direction();
@@ -91,31 +91,53 @@ char get_direction(){
 
 }
 
-void check(character& old_rotate, character new_rotate, char **field){
+void check_move(character& old_rotate, character new_rotate, char **field){
 
-    if ((new_rotate.X >= 0) && (new_rotate.X < width) && (new_rotate.Y >= 0) && (new_rotate.Y < hight) && (field[new_rotate.Y][new_rotate.X] == '_')){
+    // ОБРАБОТКА ВЫХОДА ЗА ГРАНИЦУ КАРТЫ
+    switch (new_rotate.X){
+        case -1:
+            new_rotate.X = width - 1;
+            break;
+        case width:
+            new_rotate.X = 0;
+            break;
+        default:
+            break;
+    }
+
+    switch (new_rotate.Y){
+        case -1:
+            new_rotate.Y = hight - 1;
+            break;
+        case hight:
+            new_rotate.Y = 0;
+            break;
+        default:
+            break;
+    }
+
+    if (field[new_rotate.Y][new_rotate.X] == '_'){
         field[new_rotate.Y][new_rotate.X] = '!';
         field[old_rotate.Y][old_rotate.X] = '_';
         old_rotate = new_rotate;
-
     }
 }
 void movement(int& direction, character& hero, char **field){
     switch (direction) {
         case KEY_LEFT:
-            check(hero, {hero.Y, hero.X - 1}, field);
+            check_move(hero, {hero.Y, hero.X - 1}, field);
             break;
 
         case KEY_RIGHT:
-            check(hero, {hero.Y, hero.X + 1}, field);
+            check_move(hero, {hero.Y, hero.X + 1}, field);
             break;
 
         case KEY_UP:
-            check(hero, {hero.Y - 1, hero.X}, field);
+            check_move(hero, {hero.Y - 1, hero.X}, field);
             break;
 
         case KEY_DOWN:
-            check(hero, {hero.Y + 1, hero.X}, field);
+            check_move(hero, {hero.Y + 1, hero.X}, field);
             break;
 
         default:
