@@ -2,6 +2,7 @@
 #include <fstream>
 #include <conio.h>
 #include <windows.h>
+#include <ctime>
 #include <queue>
 using namespace std;
 
@@ -19,14 +20,13 @@ struct point{
 };
 
 void corect_coordinates(point&, int, int);
-void check_move(point&, point, char**, int, int);
-void movement(int&, point&, char **, int, int);
+bool check_move(point&, point, char**, int, int);
+bool movement(int&, point&, char **, int, int);
 
 void print_field(char **, int, int);
 void print_field(int **, int, int);
 
 char get_direction();
-
 
 void Lee_algorithm(int **, char **, queue<point>&, int, int, int);
 
@@ -37,10 +37,15 @@ int main() {
     ifstream cin_file("input.txt");
     ofstream cout_file("output.txt");
     int i, j;
-    int hight = 30;
-    int width = 20;
-    point hero = {0,0};
+    int hight = 20;
+    int width = 60;
+    point hero,
+          destination_point,
+          start_point;
+    int hero_steps = 0;
 
+
+    cout << "The level is loading" << endl;
     // СОЗДАНИЕ ДВУМЕРНОГО МАССИВА КАРТЫ И КОЛИЧЕСТВА ШАГОВ ДО КЛЕТОК
     char **field = new char* [hight];
     int **step_field = new int* [hight];
@@ -48,11 +53,20 @@ int main() {
         field[i] = new char [width];
         step_field[i] = new int [width];
     }
+    srand(time(NULL));
 
     // ЗАПОЛНЕНИЕ МАССИВА
     for (i = 0; i < hight; i++){
+        //srand(time(NULL));
         for (j = 0; j < width; j++){
-            cin_file >> field[i][j];
+            // С ВЕРОЯТНОСТЬЮ 1/3 СТАВИТСЯ '#'
+            //srand(time(NULL));
+            if (rand()%9 < 4){
+                field[i][j] = '#';
+            }
+            else{
+                field[i][j] = '_';
+            }
             switch (field[i][j]){
                 case '#':
                     step_field[i][j] = WALL;
@@ -67,26 +81,66 @@ int main() {
         }
     }
 
+    // ПОИСК МЕСТА ДЛЯ ПЕРСОНАЖА
+    bool flag = true;
+    while (flag){
+        srand(time(NULL));
+        int x = rand()%width;
+        int y = rand()%hight;
+        if (field[y][x] == '_'){
+            field[y][x] = '!';
+            step_field[y][x] = 0;
+            flag = false;
+            hero = {y, x};
+            start_point = hero;
+        }
+    }
 
     // ЗАПУСК АЛГОРИТМА ЛИ и объявление вектора вызовов
     queue<point> call_queue;
-    call_queue.push({0, 0});
+    call_queue.push(hero);
     Lee_algorithm(step_field, field, call_queue, hight, width, 1);
-    // print_field(step_field, hight, width);
+    //print_field(step_field, hight, width);
 
+    // ПОИСК МЕСТА ДЛЯ КЛАДА
+
+    flag = true;
+    while (flag){
+        srand(time(NULL));
+        int x = rand()%width;
+        srand(time(NULL));
+        int y = rand()%hight;
+        if ((field[y][x] == '_') && (step_field[y][x] != INFINITY)){
+            field[y][x] = 'X';
+            flag = false;
+            destination_point = {y, x};
+        }
+    }
+
+    system("cls");
 
     // СЧИТЫВАНИЕ ПЕРЕДВИЖЕНИЙ
-    bool not_escape = true;
-    while(not_escape){
+    bool not_escape = true,
+         not_destination = true;
+    while(not_escape && not_destination){
         print_field(field, hight, width);
         int direction = get_direction();
         not_escape = (direction != ESCAPE);
         if (not_escape) {
-            movement(direction, hero, field, hight, width);
+            if (movement(direction, hero, field, hight, width)){
+                hero_steps++;
+            }
             system("cls");
         }
+        if ((hero.X == destination_point.X) && (hero.Y == destination_point.Y)){
+            cout << "The best way containe - " << step_field[destination_point.Y][destination_point.X] << " steps" << endl;
+            cout << "You did - " << hero_steps << " steps" << endl;
+            not_destination = false;
+        }
     }
-
+    field[start_point.Y][start_point.X] = '0';
+    print_field(field, hight, width);
+    system("pause");
     return 0;
 }
 
@@ -148,39 +202,42 @@ char get_direction(){
 
 
 
-
-void check_move(point& old_rotate, point new_rotate, char **field, int hight, int width){
+// ГОВОРИТ БЫЛО ЛИ ПЕРЕМЕЩЕНИЕ, ЕСЛИ ДА, ТО ОТМЕЧАЕТ ЕГО НА КАРТЕ
+bool check_move(point& old_rotate, point new_rotate, char **field, int hight, int width){
 
     // ОБРАБОТКА ВЫХОДА ЗА ГРАНИЦУ КАРТЫ
     corect_coordinates(new_rotate, hight, width);
 
-    if (field[new_rotate.Y][new_rotate.X] == '_'){
+    if (field[new_rotate.Y][new_rotate.X] != '#'){
         field[new_rotate.Y][new_rotate.X] = '!';
         field[old_rotate.Y][old_rotate.X] = '_';
         old_rotate = new_rotate;
+        return true;
     }
+    return false;
 }
-void movement(int& direction, point& hero, char **field, int hight, int width){
+bool movement(int& direction, point& hero, char **field, int hight, int width){
+    bool was_movement = false;
     switch (direction) {
         case KEY_LEFT:
-            check_move(hero, {hero.Y, hero.X - 1}, field, hight, width);
+            was_movement = check_move(hero, {hero.Y, hero.X - 1}, field, hight, width);
             break;
 
         case KEY_RIGHT:
-            check_move(hero, {hero.Y, hero.X + 1}, field, hight, width);
+            was_movement = check_move(hero, {hero.Y, hero.X + 1}, field, hight, width);
             break;
 
         case KEY_UP:
-            check_move(hero, {hero.Y - 1, hero.X}, field, hight, width);
+            was_movement = check_move(hero, {hero.Y - 1, hero.X}, field, hight, width);
             break;
 
         case KEY_DOWN:
-            check_move(hero, {hero.Y + 1, hero.X}, field, hight, width);
+            was_movement = check_move(hero, {hero.Y + 1, hero.X}, field, hight, width);
             break;
-
         default:
             break;
     }
+    return was_movement;
 }
 
 void print_field(char **field, int hight, int width){
