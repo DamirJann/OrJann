@@ -30,19 +30,36 @@ char get_direction();
 
 void Lee_algorithm(int **, char **, queue<point>&, int, int, int);
 
+bool new_level(int&, int); // Создаёт новую карту, также возвращает false, если была нажата кнопка ESCAPE
 
 
 
 int main() {
-    ifstream cin_file("input.txt");
-    ofstream cout_file("output.txt");
+
+    int score = 0;
+    int level_number = 1;
+    while (new_level(score, level_number)){
+        level_number++;
+    }
+    return 0;
+}
+
+
+
+bool new_level(int& score, int level_number) {
+    ifstream cin_file("score.txt");
     int i, j;
-    int hight = 20;
-    int width = 60;
+    int best_score;
+    int hight = 20, width = 20;
+
     point hero,
-          destination_point,
-          start_point;
+            destination_point,
+            start_point;
     int hero_steps = 0;
+
+    // УЗНАЕМ ЛУЧШИЙ СЧЁТ И ЗАКРЫВАЕМ ПОТОК
+    cin_file >> best_score;
+    cin_file.close();
 
 
     cout << "The level is loading" << endl;
@@ -120,9 +137,19 @@ int main() {
     system("cls");
 
     // СЧИТЫВАНИЕ ПЕРЕДВИЖЕНИЙ
-    bool not_escape = true,
-         not_destination = true;
+    bool not_escape = true;
+    bool not_destination = true;
     while(not_escape && not_destination){
+
+        // ВЫВОДИМ ТЕКУЩИЙ И ЛУЧШИЙ СЧЁТ
+        cout << "Your score is " << score << endl;
+        cout << "The best score " << best_score << endl;
+        cout << "Level " << level_number << endl;
+        if (score > best_score) {
+            best_score = score;
+        }
+
+        // ВЫВОДИМ СОСТОЯНИЕ КАРТЫ НА ТЕКУЩИЙ МОМЕНТ
         print_field(field, hight, width);
         int direction = get_direction();
         not_escape = (direction != ESCAPE);
@@ -136,13 +163,21 @@ int main() {
             cout << "The best way containe - " << step_field[destination_point.Y][destination_point.X] << " steps" << endl;
             cout << "You did - " << hero_steps << " steps" << endl;
             not_destination = false;
+            score+= step_field[destination_point.Y][destination_point.X] - hero_steps + 10;
+
         }
     }
     field[start_point.Y][start_point.X] = '0';
     print_field(field, hight, width);
+
+    ofstream cout_file("score.txt");
+    cout_file << best_score;
+    cout_file.close();
     system("pause");
-    return 0;
+    return not_escape;
 }
+
+
 
 
 
