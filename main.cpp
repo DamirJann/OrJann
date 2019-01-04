@@ -276,16 +276,32 @@ public:
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ИНИЦИАЛИЗАЦИЯ ЛАБИРИНТА
-    void Fill() {
+    void Fill_bineary_maze() {
 
-        srand(time(NULL));
-        for (int i = 0; i < hight; i++) {
-            for (int j = 0; j < width; j++) {
-                // С ВЕРОЯТНОСТЬЮ 1/3 СТАВИТСЯ '#'
-                if (rand() % 9 < 4) {
-                    map[i][j] = '#';
-                } else {
-                    map[i][j] = '_';
+        int i, j,
+            direction;
+
+        for (i = 0; i < hight; i++){
+            for (j = 0; j < width; j++){
+                map[i][j] = '#';
+            }
+        }
+        for (j = 0; j < width; j++) {
+            map[0][j] == '_';
+        }
+        for (i = 0; i < hight; i++) {
+            map[i][width-1] == '_';
+        }
+
+        for (i = 1; i < hight; i++){
+        //    srand(time(NULL));
+            for (j = 0; j < width - 1; j++){
+                direction = rand() % 2;
+                if (direction == 0){
+                    map[i-1][j] = '_';
+                }
+                else{
+                    map[i][j+1] = '_';
                 }
             }
         }
@@ -339,8 +355,8 @@ int main() {
 
         cout << "Level is loading...";
         level new_level;
-        new_level.Create_map(10, 10);
-        new_level.Fill();
+        new_level.Create_map(20, 50);
+        new_level.Fill_bineary_maze();
         new_level.Create_distance_map();
         new_level.Init_hero();
         new_level.Lee_algorithm(0, NULL);
