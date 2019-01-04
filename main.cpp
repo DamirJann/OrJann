@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <ctime>
 #include <queue>
+#include <cstdlib>
 using namespace std;
 
 #define KEY_UP 'W'
@@ -11,336 +12,373 @@ using namespace std;
 #define KEY_LEFT 'A'
 #define KEY_RIGHT 'D'
 #define ESCAPE 27
-#define WALL 9
-#define INFINITY 8
+#define WALL 99999999
+#define INFINITY 8888888
 
+class object {
+public:
+    int Y;
+    int X;
+    int movement_count = 0;
+    char direction = 'a';
+public:
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВВОД НАПРАВЛЕНИЯ И ИНИЦИАЛИЗАЦИЯ direction
+    void Read_direction() {
+        int i = getch();
+        if (i == 224) {
+            i = getch();
+            switch (i)
+                {
+                case 72:
+                    direction = 'W';
+                    break;
+                case 80:
+                    direction = 'S';
+                    break;
+                case 75:
+                    direction = 'A';
+                    break;
+                case 77:
+                    direction = 'D';
+                    break;
+                default:
+                    break;
+                }
+        } else {
+            direction = toupper(i);
+        }
+    }
+};
 struct point{
     int Y;
     int X;
 };
 
-void corect_coordinates(point&, int, int);
-bool check_move(point&, point, char**, int, int);
-bool movement(int&, point&, char **, int, int);
 
-void print_field(char **, int, int);
-void print_field(int **, int, int);
 
-char get_direction();
 
-void Lee_algorithm(int **, char **, queue<point>&, int, int, int);
 
-bool new_level(int&, int); // Создаёт новую карту, также возвращает false, если была нажата кнопка ESCAPE
 
+
+class level{
+
+public:
+
+
+
+
+
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // МЕНЯЕТ СЧЁТ
+    double  Get_score(){
+        return (hero.movement_count+0.0)/distance_map[destination.Y][destination.X]*1.4;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВОЗВРАЩАЕТ ГЕРОЯ
+    object& Get_hero(){
+        return hero;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВОЗВРАЩАЕТ ПОЛОЖЕНИЕ КЛАДА
+    object& Get_destination(){
+        return destination;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВЫПОЛНЯЕТ ПЕРЕДВИЖЕНИЕ
+    bool Check_move(point new_rotate){
+
+        // ОБРАБОТКА ВЫХОДА ЗА ГРАНИЦУ КАРТЫ
+        Correct_coordinates(new_rotate);
+
+        if (map[new_rotate.Y][new_rotate.X] != '#'){
+            map[new_rotate.Y][new_rotate.X] = '!';
+            map[hero.Y][hero.X] = '_';
+            hero.Y = new_rotate.Y;
+            hero.X = new_rotate.X;
+            return true;
+        }
+        return false;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // БЫЛО ЛИ ПЕРЕДВИЖЕНИЕ, ЕСЛИ ДА ТО ОНО ВЫПОЛНЯЕТСЯ
+    bool Was_movement() {
+        bool was_movement = false;
+        switch (hero.direction) {
+            case KEY_LEFT:
+                was_movement = Check_move({hero.Y, hero.X - 1});
+                break;
+
+            case KEY_RIGHT:
+                was_movement = Check_move({hero.Y, hero.X + 1});
+                break;
+
+            case KEY_UP:
+                was_movement = Check_move({hero.Y - 1, hero.X});
+                break;
+
+            case KEY_DOWN:
+                was_movement = Check_move({hero.Y + 1, hero.X});
+                break;
+            default:
+                break;
+        }
+        return was_movement;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ИНИЦИАЛИЗАЦИЯ РАСПЛОЖЕНИЯ ИГРОКА
+    void Init_hero(){
+            bool flag = true;
+            while (flag){
+                srand(time(NULL));
+                int x = rand() % width;
+                int y = rand() % hight;
+                if (map[y][x] == '_') {
+                    map[y][x] = '!';
+                    distance_map[y][x] = 0;
+                    flag = false;
+                    hero = {y, x};
+                }
+            }
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ИНИЦИАЛИЗАЦИЯ РАСПЛОЖЕНИЯ КЛАДА
+    void Init_destination(){
+        bool flag = true;
+        while (flag){
+            srand(time(NULL));
+            int x = rand() % width;
+            int y = rand() % hight;
+            if ((distance_map[y][x] != WALL) && (distance_map[y][x] != INFINITY) && (x != hero.X || y != hero.Y)) {
+                map[y][x] = 'X';
+                flag = false;
+                destination = {y, x};
+            }
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // АЛГОРИТМ ЛИ
+    void Lee_algorithm(int weawe_count, queue<point>* call_queue){
+
+        if (weawe_count == 0){
+            call_queue = new(queue<point>);
+            call_queue->push({hero.Y, hero.X});
+        }
+
+        int count = call_queue->size();
+
+
+        while (count != 0){
+
+            // КООРДИНАТЫ РАССМАТРИВАЕМОГО ЯДРА
+            int x = call_queue->front().X;
+            int y = call_queue->front().Y;
+            point p;
+
+            distance_map[y][x] = min(weawe_count, distance_map[y][x]);
+
+            p = {y - 1, x};
+            if (Check(p) == true) {
+                Correct_coordinates(p);
+                call_queue->push(p);
+            }
+
+            p = {y + 1, x};
+            if (Check(p) == true) {
+                Correct_coordinates(p);
+                call_queue->push(p);
+            }
+
+            p = {y, x - 1};
+            if (Check(p) == true) {
+                Correct_coordinates(p);
+                call_queue->push(p);
+            }
+
+            p = {y, x + 1};
+            if (Check(p) == true) {
+                Correct_coordinates(p);
+                call_queue->push(p);
+            }
+
+            call_queue->pop();
+            count--;
+        }
+
+        if (!call_queue->empty()) {
+            Lee_algorithm(weawe_count + 1, call_queue);
+        }
+
+        if (weawe_count == 0){
+            delete call_queue;
+        }
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // МЕТОД ВОЗРАЩАЕТ FALSE, ЕСЛИ КООРДИНАТЫ НЕКОРРЕКТНЫ.
+    bool Check(point p){
+        Correct_coordinates(p);
+        if (distance_map[p.Y][p.X] == INFINITY)
+            return true;
+        else
+            return false;
+
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // МЕНЯЕТ КООРДИНАТЫ, ЕСЛИ ОНИ НЕКОРРЕКТНЫ.
+    void Correct_coordinates(point& p){
+        if (p.X == -1) p.X = width-1;
+        if (p.X == width) p.X = 0;
+
+        if (p.Y == -1) p.Y = hight-1;
+        if (p.Y == hight) p.Y = 0;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // СОЗДАНИЕ map
+    void Create_map(int hight, int width){
+
+        this->hight = hight;
+        this->width = width;
+
+        map = new char* [this->hight];
+        for ( int i = 0; i < this->hight; i++){
+            map[i] = new char [this->width];
+        }
+
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // СОЗДАНИЕ И ИНИЦИАЛИЗИРОВАНИЕ distance_map
+    void Create_distance_map(){
+
+        distance_map = new int* [hight];
+        for ( int i = 0; i < hight; i++){
+            distance_map[i] = new int [width];
+        }
+
+        for ( int i = 0; i < hight; i++){
+            for (int j = 0; j < width; j++){
+                switch (map[i][j]){
+                case '#':
+                    distance_map[i][j] = WALL;
+                    break;
+                case '_':
+                    distance_map[i][j] = INFINITY;
+                    break;
+                default:
+                    distance_map[i][j] = 0;
+                    break;
+                }
+            }
+        }
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ИНИЦИАЛИЗАЦИЯ ЛАБИРИНТА
+    void Fill() {
+
+        srand(time(NULL));
+        for (int i = 0; i < hight; i++) {
+            for (int j = 0; j < width; j++) {
+                // С ВЕРОЯТНОСТЬЮ 1/3 СТАВИТСЯ '#'
+                if (rand() % 9 < 4) {
+                    map[i][j] = '#';
+                } else {
+                    map[i][j] = '_';
+                }
+            }
+        }
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВЫВОД КАРТЫ
+    void Print_map() {
+        for (int i = 0; i < hight; i++) {
+            cout << endl;
+            for (int j = 0; j < width; j++) {
+                cout << map[i][j];
+            }
+        }
+        cout << endl;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВЫВОД КАРТЫ РАССТОЯНИЙ
+    void Print_distance_map(){
+        for (int i = 0; i < hight; i++) {
+            cout << endl;
+            for (int j = 0; j < width; j++) {
+                cout << distance_map[i][j] << ' ';
+            }
+        }
+        cout << endl;
+    }
+
+
+private:
+    char ** map;
+    int hight,
+        width;
+    int ** distance_map;
+    object hero = {INFINITY, INFINITY},
+           destination = {INFINITY, INFINITY};
+};
 
 
 int main() {
 
-    int score = 0;
-    int level_number = 1;
-    while (new_level(score, level_number)){
-        level_number++;
-    }
-    return 0;
-}
-
-
-
-bool new_level(int& score, int level_number) {
-    ifstream cin_file("score.txt");
-    int i, j;
-    int best_score;
-    int hight = 20, width = 20;
-
-    point hero,
-            destination_point,
-            start_point;
-    int hero_steps = 0;
-
-    // УЗНАЕМ ЛУЧШИЙ СЧЁТ И ЗАКРЫВАЕМ ПОТОК
-    cin_file >> best_score;
-    cin_file.close();
-
-
-    cout << "The level is loading" << endl;
-    // СОЗДАНИЕ ДВУМЕРНОГО МАССИВА КАРТЫ И КОЛИЧЕСТВА ШАГОВ ДО КЛЕТОК
-    char **field = new char* [hight];
-    int **step_field = new int* [hight];
-    for (i = 0; i < hight; i++){
-        field[i] = new char [width];
-        step_field[i] = new int [width];
-    }
-    srand(time(NULL));
-
-    // ЗАПОЛНЕНИЕ МАССИВА
-    for (i = 0; i < hight; i++){
-        //srand(time(NULL));
-        for (j = 0; j < width; j++){
-            // С ВЕРОЯТНОСТЬЮ 1/3 СТАВИТСЯ '#'
-            //srand(time(NULL));
-            if (rand()%9 < 4){
-                field[i][j] = '#';
-            }
-            else{
-                field[i][j] = '_';
-            }
-            switch (field[i][j]){
-                case '#':
-                    step_field[i][j] = WALL;
-                    break;
-                case '_':
-                    step_field[i][j] = INFINITY;
-                    break;
-                default:
-                    step_field[i][j] = 0;
-                    break;
-            }
-        }
-    }
-
-    // ПОИСК МЕСТА ДЛЯ ПЕРСОНАЖА
-    bool flag = true;
-    while (flag){
-        srand(time(NULL));
-        int x = rand()%width;
-        int y = rand()%hight;
-        if (field[y][x] == '_'){
-            field[y][x] = '!';
-            step_field[y][x] = 0;
-            flag = false;
-            hero = {y, x};
-            start_point = hero;
-        }
-    }
-
-    // ЗАПУСК АЛГОРИТМА ЛИ и объявление вектора вызовов
-    queue<point> call_queue;
-    call_queue.push(hero);
-    Lee_algorithm(step_field, field, call_queue, hight, width, 1);
-    //print_field(step_field, hight, width);
-
-    // ПОИСК МЕСТА ДЛЯ КЛАДА
-
-    flag = true;
-    while (flag){
-        srand(time(NULL));
-        int x = rand()%width;
-        srand(time(NULL));
-        int y = rand()%hight;
-        if ((field[y][x] == '_') && (step_field[y][x] != INFINITY)){
-            field[y][x] = 'X';
-            flag = false;
-            destination_point = {y, x};
-        }
-    }
-
-    system("cls");
-
-    // СЧИТЫВАНИЕ ПЕРЕДВИЖЕНИЙ
     bool not_escape = true;
-    bool not_destination = true;
-    while(not_escape && not_destination){
+    double score = 0,
+        best_score = 0;
+    int level_number = 0;
+    // ОТКРЫВАЕМ ПОТОК, СЧИТЫВАЕМ ЛУЧШИЙ СЧЁТ, ЗАКРЫВАЕМ ЕГО
+    ifstream cin_score("score.txt");
+    cin_score >> best_score;
+    cin_score.close();
 
-        // ВЫВОДИМ ТЕКУЩИЙ И ЛУЧШИЙ СЧЁТ
-        cout << "Your score is " << score << endl;
-        cout << "The best score " << best_score << endl;
-        cout << "Level " << level_number << endl;
-        if (score > best_score) {
-            best_score = score;
-        }
+    while(not_escape){
 
-        // ВЫВОДИМ СОСТОЯНИЕ КАРТЫ НА ТЕКУЩИЙ МОМЕНТ
-        print_field(field, hight, width);
-        int direction = get_direction();
-        not_escape = (direction != ESCAPE);
-        if (not_escape) {
-            if (movement(direction, hero, field, hight, width)){
-                hero_steps++;
+        cout << "Level is loading...";
+        level new_level;
+        new_level.Create_map(10, 10);
+        new_level.Fill();
+        new_level.Create_distance_map();
+        new_level.Init_hero();
+        new_level.Lee_algorithm(0, NULL);
+        new_level.Init_destination();
+        level_number++;
+
+        system("cls");
+
+        while ((not_escape) && ((new_level.Get_hero().Y != new_level.Get_destination().Y) || (new_level.Get_hero().X != new_level.Get_destination().X)))
+        {
+            cout << "Level " << level_number << endl << endl;
+            cout << "Your score is " << score << endl;
+            cout << "The best score " << best_score << endl;
+            cout << "You did " << new_level.Get_hero().movement_count << " steps" << endl;
+            new_level.Print_map();
+
+            new_level.Get_hero().Read_direction();
+            not_escape = (new_level.Get_hero().direction != ESCAPE);
+            if (new_level.Was_movement()){
+                new_level.Get_hero().movement_count++;
             }
+
             system("cls");
-        }
-        if ((hero.X == destination_point.X) && (hero.Y == destination_point.Y)){
-            cout << "The best way containe - " << step_field[destination_point.Y][destination_point.X] << " steps" << endl;
-            cout << "You did - " << hero_steps << " steps" << endl;
-            not_destination = false;
-            score+= step_field[destination_point.Y][destination_point.X] - hero_steps + 10;
+         }
 
-        }
+         score += new_level.Get_score();
+         if (score > best_score) {
+             best_score = score;
+         }
+
     }
-    field[start_point.Y][start_point.X] = '0';
-    print_field(field, hight, width);
-
-    ofstream cout_file("score.txt");
-    cout_file << best_score;
-    cout_file.close();
+    cout << "You passed " << level_number << " levels" << endl;
+    cout << "Your score is " << score << endl;;
+    cout << "The best score is " << best_score << endl;
+    cout << '\n';
+    ofstream cout_score("score.txt");
+    cout_score << best_score;
+    cout_score.close();
     system("pause");
-    return not_escape;
-}
-
-
-
-
-
-
-
-void corect_coordinates(point& p, int hight, int width){
-    if (p.X == -1) p.X = width-1;
-    if (p.X == width) p.X = 0;
-
-    if (p.Y == -1) p.Y = hight-1;
-    if (p.Y == hight) p.Y = 0;
-}
-
-bool check(int  ** step_field, int hight, int width, point p){
-    corect_coordinates(p, hight, width);
-    if (step_field[p.Y][p.X] == INFINITY )
-        return true;
-    else
-        return false;
-
-}
-
-char get_direction(){
-    int i = getch();
-
-    if (i == 224) {
-        i = getch();
-        switch (i) {
-            case 72:
-                return 'W';
-                break;
-
-            case 80:
-                return 'S';
-                break;
-
-            case 75:
-                return 'A';
-                break;
-
-            case 77:
-                return 'D';
-                break;
-
-            default:
-                break;
-        }
-    }
-    else{
-      return toupper(i);
-    }
-
-
-}
-
-
-
-
-
-// ГОВОРИТ БЫЛО ЛИ ПЕРЕМЕЩЕНИЕ, ЕСЛИ ДА, ТО ОТМЕЧАЕТ ЕГО НА КАРТЕ
-bool check_move(point& old_rotate, point new_rotate, char **field, int hight, int width){
-
-    // ОБРАБОТКА ВЫХОДА ЗА ГРАНИЦУ КАРТЫ
-    corect_coordinates(new_rotate, hight, width);
-
-    if (field[new_rotate.Y][new_rotate.X] != '#'){
-        field[new_rotate.Y][new_rotate.X] = '!';
-        field[old_rotate.Y][old_rotate.X] = '_';
-        old_rotate = new_rotate;
-        return true;
-    }
-    return false;
-}
-bool movement(int& direction, point& hero, char **field, int hight, int width){
-    bool was_movement = false;
-    switch (direction) {
-        case KEY_LEFT:
-            was_movement = check_move(hero, {hero.Y, hero.X - 1}, field, hight, width);
-            break;
-
-        case KEY_RIGHT:
-            was_movement = check_move(hero, {hero.Y, hero.X + 1}, field, hight, width);
-            break;
-
-        case KEY_UP:
-            was_movement = check_move(hero, {hero.Y - 1, hero.X}, field, hight, width);
-            break;
-
-        case KEY_DOWN:
-            was_movement = check_move(hero, {hero.Y + 1, hero.X}, field, hight, width);
-            break;
-        default:
-            break;
-    }
-    return was_movement;
-}
-
-void print_field(char **field, int hight, int width){
-    for (int i = 0; i < hight; i++){
-        cout << endl;
-        for (int j = 0; j < width; j++){
-            cout << field[i][j];
-        }
-    }
-}
-
-void print_field(int **massive, int hight, int width){
-    for (int i = 0; i < hight; i++){
-        cout << endl;
-        for (int j = 0; j < width; j++){
-            cout << massive[i][j];
-        }
-    }
-}
-
-void Lee_algorithm(int ** step_field, char ** field, queue<point>& call_queue, int hight, int width, int weawe_count){
-
-
-    int count = call_queue.size();
-
-    while (count != 0) {
-
-
-        // КООРДИНАТЫ РАССМАТРИВАЕМОГО ЯДРА
-        int x = call_queue.front().X;
-        int y = call_queue.front().Y;
-        point p;
-
-        p = {y-1, x};
-        if (check(step_field, hight, width, p) == true) {
-            corect_coordinates(p, hight, width);
-            call_queue.push(p);
-            step_field[p.Y][p.X] = weawe_count;
-        }
-
-        p = {y+1, x};
-        if (check(step_field, hight, width, p) == true) {
-            corect_coordinates(p, hight, width);
-            call_queue.push(p);
-            step_field[p.Y][p.X] = weawe_count;
-        }
-
-        p = {y, x-1};
-        if (check(step_field, hight, width, p) == true) {
-            corect_coordinates(p, hight, width);
-            call_queue.push(p);
-            step_field[p.Y][p.X] = weawe_count;
-        }
-
-        p = {y, x+1};
-        if (check(step_field, hight, width, p) == true) {
-            corect_coordinates(p, hight, width);
-            call_queue.push(p);
-            step_field[p.Y][p.X] = weawe_count;
-        }
-
-        call_queue.pop();
-        count--;
-    }
-
-    if (!call_queue.empty()){
-        Lee_algorithm(step_field, field, call_queue, hight, width, weawe_count+1);
-    }
-
-
+    return 0;
 }
