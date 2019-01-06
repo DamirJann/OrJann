@@ -275,7 +275,7 @@ public:
         }
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // ИНИЦИАЛИЗАЦИЯ ЛАБИРИНТА
+    // ИНИЦИАЛИЗАЦИЯ ЛАБИРИНТА ДВОИЧНЫМ СПОСОБОМ
     void Fill_bineary_maze() {
 
         int i, j,
@@ -294,7 +294,7 @@ public:
         }
 
         for (i = 1; i < hight; i++){
-        //    srand(time(NULL));
+            srand(time(NULL));
             for (j = 0; j < width - 1; j++){
                 direction = rand() % 2;
                 if (direction == 0){
@@ -306,6 +306,49 @@ public:
             }
         }
     }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ИНИЦИАЛИЗАЦИЯ ЛАБИРИНТА С ПОМОЩЬЮ SIDEWINDER
+    void Fill_sidewinder_maze() {
+
+        int i, j;
+        bool carve;
+
+        srand(time(NULL));
+
+        for (i = 0; i < hight; i++) {
+            for (j = 0; j < width; j++) {
+                map[i][j] = '#';
+            }
+        }
+
+
+        for (i = 0; i < hight; i++){
+            vector<point> cells = {{i, 0}};
+            int set_start = 0;
+            int a;
+            while (cells[cells.size()-1].X + 1 != width){
+
+                if (rand()%2 == 1){
+                        map[cells[cells.size()-1].Y][cells[cells.size()-1].X + 1] = '_';
+                        cells.push_back({cells[cells.size()-1].Y, cells[cells.size()-1].X + 1});
+                }
+                else{
+                    int tmp = set_start + rand() % (cells.size()-set_start);
+                    if (cells[tmp].Y != 0){
+                        map[cells[tmp].Y-1][cells[tmp].X] = '_';
+                    }
+                    cells.push_back({cells[cells.size()-1].Y, cells[cells.size()-1].X + 1});
+                }
+                set_start++;
+            }
+        }
+
+
+
+    }
+
+
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВЫВОД КАРТЫ
     void Print_map() {
@@ -355,8 +398,8 @@ int main() {
 
         cout << "Level is loading...";
         level new_level;
-        new_level.Create_map(20, 50);
-        new_level.Fill_bineary_maze();
+        new_level.Create_map(20, 60);
+        new_level.Fill_sidewinder_maze();
         new_level.Create_distance_map();
         new_level.Init_hero();
         new_level.Lee_algorithm(0, NULL);
