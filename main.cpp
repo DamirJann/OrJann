@@ -443,7 +443,7 @@ int main() {
 
        // new_level.Get_direction();
         new_level.Print_map();
-        cout << "To move on to the next level press any kye"l
+        cout << "To move on to the next level press any kye";
         getch();
 
          score += new_level.Get_score();
