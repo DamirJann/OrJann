@@ -4,7 +4,7 @@
 #include <windows.h>
 #include <ctime>
 #include <queue>
-#include <cstdlib>
+#include <string>
 using namespace std;
 
 #define KEY_UP 'W'
@@ -21,6 +21,7 @@ public:
     int X;
     int movement_count = 0;
     char direction = 'a';
+    string healthbar = "***";
 public:
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВВОД НАПРАВЛЕНИЯ И ИНИЦИАЛИЗАЦИЯ direction
@@ -69,8 +70,16 @@ public:
 
 
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ПРОЛОЖИТЬ НАИЛУЧШИЙ МАРШРУТ
+    void Get_direction(point current_p, int way){
+    }
 
-
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ПОЛУЧИТЬ РЕЗУЛЬТАТЫ
+    int  Get_the_best_way() {
+        return distance_map[destination.Y][destination.X];
+    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // МЕНЯЕТ СЧЁТ
     double  Get_score(){
@@ -104,7 +113,7 @@ public:
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // БЫЛО ЛИ ПЕРЕДВИЖЕНИЕ, ЕСЛИ ДА ТО ОНО ВЫПОЛНЯЕТСЯ
+    // БЫЛО ЛИ ПЕРЕДВИЖЕНИЕ, ЕСЛИ ДА ТО ОНО ВЫПОЛНЯЕТСЯ. В ДРУГОМ СЛУЧАЧЕ ОТНИМАЕТ ЖИЗНБ
     bool Was_movement() {
         bool was_movement = false;
         switch (hero.direction) {
@@ -125,6 +134,9 @@ public:
                 break;
             default:
                 break;
+        }
+        if (was_movement == false){
+            hero.healthbar.erase(hero.healthbar.end()-1);
         }
         return was_movement;
     }
@@ -351,7 +363,7 @@ public:
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВЫВОД КАРТЫ
-    void Print_map() {
+    void  Print_map() {
         for (int i = 0; i < hight; i++) {
             cout << endl;
             for (int j = 0; j < width; j++) {
@@ -386,6 +398,7 @@ private:
 int main() {
 
     bool not_escape = true;
+    string health = "***";
     double score = 0,
         best_score = 0;
     int level_number = 0;
@@ -394,45 +407,58 @@ int main() {
     cin_score >> best_score;
     cin_score.close();
 
-    while(not_escape){
+    while(not_escape && (health.size() != 0)) {
 
         cout << "Level is loading...";
         level new_level;
-        new_level.Create_map(20, 60);
+        new_level.Create_map(19, 40);
         new_level.Fill_sidewinder_maze();
         new_level.Create_distance_map();
         new_level.Init_hero();
+        new_level.Get_hero().healthbar = health;
         new_level.Lee_algorithm(0, NULL);
         new_level.Init_destination();
         level_number++;
 
         system("cls");
 
-        while ((not_escape) && ((new_level.Get_hero().Y != new_level.Get_destination().Y) || (new_level.Get_hero().X != new_level.Get_destination().X)))
-        {
-            cout << "Level " << level_number << endl << endl;
+        while ((not_escape) && (health.size() != 0) && ((new_level.Get_hero().Y != new_level.Get_destination().Y) ||
+                                                        (new_level.Get_hero().X != new_level.Get_destination().X))){
+            cout << "Level " << level_number << endl;
             cout << "Your score is " << score << endl;
             cout << "The best score " << best_score << endl;
             cout << "You did " << new_level.Get_hero().movement_count << " steps" << endl;
+            cout << "The best way containe " << new_level.Get_the_best_way() << " steps"  << endl;
+            cout << "Life: " << new_level.Get_hero().healthbar << endl;
             new_level.Print_map();
 
             new_level.Get_hero().Read_direction();
             not_escape = (new_level.Get_hero().direction != ESCAPE);
-            if (new_level.Was_movement()){
+            if (new_level.Was_movement()) {
                 new_level.Get_hero().movement_count++;
             }
-
+            health = new_level.Get_hero().healthbar;
             system("cls");
-         }
+        }
+
+       // new_level.Get_direction();
+        new_level.Print_map();
+        cout << "To move on to the next level press any kye"l
+        getch();
 
          score += new_level.Get_score();
-         if (score > best_score) {
+         if (score > best_score){
              best_score = score;
          }
 
     }
+
+
+    if (health == ""){
+        cout << "You are dead" << "\n\n";
+    }
     cout << "You passed " << level_number << " levels" << endl;
-    cout << "Your score is " << score << endl;;
+    cout << "Your score is " << score << endl;
     cout << "The best score is " << best_score << endl;
     cout << '\n';
     ofstream cout_score("score.txt");
