@@ -69,12 +69,28 @@ public:
 
 
 
-
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ОТМЕЧАЕТ ТОЧКУ НА КАРТЕ, ЕСЛИ ОНА ЛЕЖИТ НА ОПТИМАЛЬНОМ МАРШРУТЕ. ИСПОЛЬЗУТСЯ В МЕТОДА Get_direction
+    bool Mark_point_in_direction(point old_coordinate,point new_coordinate){
+        Correct_coordinates(new_coordinate);
+        if (distance_map[old_coordinate.Y][old_coordinate.X]-1 == distance_map[new_coordinate.Y][new_coordinate.X]){
+            Get_direction(new_coordinate);
+            return true;
+        }
+        return false;
+    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ПРОЛОЖИТЬ НАИЛУЧШИЙ МАРШРУТ
-    void Get_direction(point current_p, int way){
-    }
+    void Get_direction(point old_coordinate){
 
+        map[old_coordinate.Y][old_coordinate.X] = '+';
+
+        // ЛИШЬ ОДНА КЛЕТКА БУДЕТ ОТМЕЧЕНА
+        if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y+1, old_coordinate.X})) {return;}
+        if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y-1, old_coordinate.X})) {return;}
+        if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y, old_coordinate.X+1})) {return;}
+        if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y, old_coordinate.X-1})) {return;}
+    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ПОЛУЧИТЬ РЕЗУЛЬТАТЫ
     int  Get_the_best_way() {
@@ -441,10 +457,11 @@ int main() {
             system("cls");
         }
 
-       // new_level.Get_direction();
+        new_level.Get_direction({new_level.Get_destination().Y, new_level.Get_destination().X});
         new_level.Print_map();
-        cout << "To move on to the next level press any kye";
-        getch();
+        cout << "\nTo move on to the next level press any kye"<< endl;
+        system("pause");
+        system("cls");
 
          score += new_level.Get_score();
          if (score > best_score){
