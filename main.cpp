@@ -6,7 +6,7 @@
 #include <queue>
 #include <string>
 #include <iomanip>
-#include <cstdlib>
+#include <stdlib.h>
 using namespace std;
 
 #define KEY_UP 'W'
