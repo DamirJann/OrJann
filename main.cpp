@@ -17,14 +17,112 @@ using namespace std;
 #define WALL 99999999
 #define INFINITY 8888888
 
-class object {
-public:
+
+
+
+
+struct point{
     int Y;
     int X;
-    int movement_count = 0;
-    char direction = 'a';
-    string healthbar = "***";
+};
+
+
+class object {
+private:
+    point rotation;
+    int score, movement_count,
+        healthbar, level_number;
+    char direction = INFINITY;
 public:
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // КОНСТРУКТОР ИНИЦИАЛИЗАЦИИ
+    object(): score(0), movement_count(0),
+              healthbar(3), level_number(0),
+              direction(INFINITY) {}
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВЫДАЁТ СЧЁТ
+    double  Get_score() const{
+        return score;
+     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ОБНУЛЯЕТ СЧЁТЧИК ШАГОВ
+    void Initializate_movement_count(){
+        movement_count = 0;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВОЗВРАЩАЕТ ЗДОРОВЬЕ
+    int Get_healthbar() const{
+        return healthbar;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВОЗВРАЩАЕТ НАПРАВЛЕНИЕ ДВИЖЕНИЯ
+    char Get_direction() const{
+        return direction;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВОЗВРАЩАЕТ КОЛИЧЕСТВО СДЕЛАННЫХ ШАГОВ
+    int Get_movement_count() const{
+        return movement_count;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВОЗВРАЩАЕТ КОЛИЧЕСТВО СДЕЛАННЫХ ШАГОВ
+    void Inc_movement_count(){
+        movement_count++;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ИНКРЕМЕНТИРУЕТ level_number
+    void  Inc_level(){
+        level_number++;
+    }
+    // ИНКРЕМЕНТИРУЕТ level_number
+    void  Change_rotation(point new_rotation){
+        rotation = new_rotation;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // УБИРАЕТ ОДНУ ЖИЗНЬ
+    void  Dec_health(){
+        healthbar--;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВОЗВРАЩАЕТ level_number
+    int  Get_level_number() const{
+        return level_number;
+    }
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВОЗВРАЩАЕТ ПОЛОСКУ ЖИЗНИ
+    string  Print_healthbar() const{
+        string result("");
+        for (int i = 0; i < healthbar; i++){
+            result += '*';
+        }
+        return result;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // МЕНЯЕТ СЧЁТ
+    void Change_score(int best_way){
+      score += best_way-movement_count+5*1.46741346546515156487;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВОЗВРАЩАЕТ МЕСТОПОЛОЖЕНИЕ ИГРОКА
+    point Get_rotation() const{
+        return rotation;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВВОД НАПРАВЛЕНИЯ И ИНИЦИАЛИЗАЦИЯ direction
     void Read_direction() {
@@ -32,7 +130,7 @@ public:
         if (i == 224) {
             i = getch();
             switch (i)
-                {
+            {
                 case 72:
                     direction = 'W';
                     break;
@@ -47,160 +145,168 @@ public:
                     break;
                 default:
                     break;
-                }
+            }
         } else {
             direction = toupper(i);
         }
     }
+
 };
-struct point{
-    int Y;
-    int X;
-};
-
-
-
-
-
 
 
 class level{
+private:
+    int hight, width;
+    vector<vector<char>> map;
+    vector<vector<int>> distance_map;
+    point destination;
 
 public:
-
-
-
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ИНИЦИАЛИЗИРУЮЩИЙ КОНСТРУКТОР
+    level(): destination({INFINITY, INFINITY}),
+             map({}), distance_map({}) {}
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // ОТМЕЧАЕТ ТОЧКУ НА КАРТЕ, ЕСЛИ ОНА ЛЕЖИТ НА ОПТИМАЛЬНОМ МАРШРУТЕ. ИСПОЛЬЗУТСЯ В МЕТОДА Get_direction
-    bool Mark_point_in_direction(point old_coordinate,point new_coordinate){
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ПРОКЛАДЫВАЕТ НАИЛУЧШЙ МАРШРУТ
+    bool Mark_point_in_direction(point old_coordinate,point new_coordinate, const object hero){
         Correct_coordinates(new_coordinate);
         if (distance_map[old_coordinate.Y][old_coordinate.X]-1 == distance_map[new_coordinate.Y][new_coordinate.X]){
-            Get_direction(new_coordinate);
+            Pave_direction(new_coordinate, hero);
             return true;
         }
         return false;
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ПРОЛОЖИТЬ НАИЛУЧШИЙ МАРШРУТ
-    void Get_direction(point old_coordinate){
+    void Pave_direction(point old_coordinate, const object hero){
 
         map[old_coordinate.Y][old_coordinate.X] = '+';
 
         // ЛИШЬ ОДНА КЛЕТКА БУДЕТ ОТМЕЧЕНА
-        if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y+1, old_coordinate.X})) {return;}
-        if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y-1, old_coordinate.X})) {return;}
-        if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y, old_coordinate.X+1})) {return;}
-        if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y, old_coordinate.X-1})) {return;}
+        if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y+1, old_coordinate.X}, hero));
+            else
+        if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y-1, old_coordinate.X}, hero));
+            else
+        if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y, old_coordinate.X+1}, hero));
+            else
+        if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y, old_coordinate.X-1}, hero));
+
         if (distance_map[old_coordinate.Y][old_coordinate.X] == 0){
             map[old_coordinate.Y][old_coordinate.X] = 'S';
-            map[hero.Y][hero.X] = 'F';
+            map[hero.Get_rotation().Y][hero.Get_rotation().X] = 'F';
         }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ПОЛУЧИТЬ РЕЗУЛЬТАТЫ
-    int  Get_the_best_way() {
+    int  Get_the_best_way() const{
         return distance_map[destination.Y][destination.X];
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // МЕНЯЕТ СЧЁТ
-    double  Get_score(){
-        return (distance_map[destination.Y][destination.X]-hero.movement_count+5)*1.46741346546515156487;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВОЗВРАЩАЕТ ШИРИНУ КАРТЫ
+    int  Get_width() const{
+        return width;
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // ВОЗВРАЩАЕТ ГЕРОЯ
-    object& Get_hero(){
-        return hero;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВОЗВРАЩАЕТ ШИРИНУ КАРТЫ
+    int  Get_hight() const{
+        return hight;
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВОЗВРАЩАЕТ ПОЛОЖЕНИЕ КЛАДА
-    object& Get_destination(){
+    point Get_destination() const{
         return destination;
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // БЫЛО ЛИ ПЕРЕДВИЖЕНИЕ, ЕСЛИ ДА ТО ОНО ВЫПОЛНЯЕТСЯ. В ДРУГОМ СЛУЧАЧЕ ОТНИМАЕТ ЖИЗНБ
+    bool Was_movement(object& hero) {
+        bool was_movement = false;
+        switch (hero.Get_direction()) {
+            case KEY_LEFT:
+                was_movement = Check_move({hero.Get_rotation().Y, hero.Get_rotation().X - 1}, hero);
+                break;
+
+            case KEY_RIGHT:
+                was_movement = Check_move({hero.Get_rotation().Y, hero.Get_rotation().X + 1}, hero);
+                break;
+
+            case KEY_UP:
+                was_movement = Check_move({hero.Get_rotation().Y - 1, hero.Get_rotation().X}, hero);
+                break;
+
+            case KEY_DOWN:
+                was_movement = Check_move({hero.Get_rotation().Y + 1, hero.Get_rotation().X}, hero);
+                break;
+            default:
+                break;
+        }
+        return was_movement;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВЫПОЛНЯЕТ ПЕРЕДВИЖЕНИЕ
-    bool Check_move(point new_rotate){
+    bool Check_move(point new_rotate, object& hero){
 
         // ОБРАБОТКА ВЫХОДА ЗА ГРАНИЦУ КАРТЫ
         Correct_coordinates(new_rotate);
 
         if (map[new_rotate.Y][new_rotate.X] != '#'){
             map[new_rotate.Y][new_rotate.X] = '!';
-            map[hero.Y][hero.X] = '_';
-            hero.Y = new_rotate.Y;
-            hero.X = new_rotate.X;
+            map[hero.Get_rotation().Y][hero.Get_rotation().X] = '_';
+            hero.Change_rotation({new_rotate.Y, new_rotate.X});
             return true;
         }
         return false;
     }
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // БЫЛО ЛИ ПЕРЕДВИЖЕНИЕ, ЕСЛИ ДА ТО ОНО ВЫПОЛНЯЕТСЯ. В ДРУГОМ СЛУЧАЧЕ ОТНИМАЕТ ЖИЗНБ
-    bool Was_movement() {
-        bool was_movement = false;
-        switch (hero.direction) {
-            case KEY_LEFT:
-                was_movement = Check_move({hero.Y, hero.X - 1});
-                break;
-
-            case KEY_RIGHT:
-                was_movement = Check_move({hero.Y, hero.X + 1});
-                break;
-
-            case KEY_UP:
-                was_movement = Check_move({hero.Y - 1, hero.X});
-                break;
-
-            case KEY_DOWN:
-                was_movement = Check_move({hero.Y + 1, hero.X});
-                break;
-            default:
-                break;
-        }
-        if (was_movement == false){
-            hero.healthbar.erase(hero.healthbar.end()-1);
-        }
-        return was_movement;
-    }
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // ИНИЦИАЛИЗАЦИЯ РАСПЛОЖЕНИЯ ИГРОКА
-    void Init_hero(){
-            bool flag = true;
-            while (flag){
-                srand(time(NULL));
-                int x = rand() % width;
-                int y = rand() % hight;
-                if (map[y][x] == '_') {
-                    map[y][x] = '!';
-                    distance_map[y][x] = 0;
-                    flag = false;
-                    hero = {y, x};
-                }
-            }
-    }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ИНИЦИАЛИЗАЦИЯ РАСПЛОЖЕНИЯ КЛАДА
-    void Init_destination(){
+    void Init_destination(const object hero){
         bool flag = true;
         while (flag){
             srand(time(NULL));
             int x = rand() % width;
             int y = rand() % hight;
-            if ((distance_map[y][x] != WALL) && (distance_map[y][x] != INFINITY) && (x != hero.X || y != hero.Y)) {
+            if ((distance_map[y][x] != WALL) && (distance_map[y][x] != INFINITY) && (x != hero.Get_rotation().X || y != hero.Get_rotation().Y)) {
                 map[y][x] = 'X';
                 flag = false;
                 destination = {y, x};
             }
         }
     }
-
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ИНИЦИАЛИЗАЦИЯ РАСПЛОЖЕНИЯ ИГРОКА
+    void Init_hero(object& hero) {
+        bool flag = true;
+        while (flag) {
+            srand(time(NULL));
+            int x = rand() % width;
+            int y = rand() % hight;
+            if (map[y][x] == '_') {
+                map[y][x] = '!';
+                distance_map[y][x] = 0;
+                flag = false;
+                hero.Change_rotation({y, x});
+            }
+        }
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // АЛГОРИТМ ЛИ
-    void Lee_algorithm(int weawe_count, queue<point>* call_queue){
+    void Lee_algorithm(int weawe_count, queue<point>* call_queue, const object hero){
 
         if (weawe_count == 0){
             call_queue = new(queue<point>);
-            call_queue->push({hero.Y, hero.X});
+            call_queue->push({hero.Get_rotation().Y, hero.Get_rotation().X});
         }
 
         int count = call_queue->size();
@@ -216,25 +322,25 @@ public:
             distance_map[y][x] = min(weawe_count, distance_map[y][x]);
 
             p = {y - 1, x};
-            if (Check(p) == true) {
+            if (Is_correct_coordinates(p) == true) {
                 Correct_coordinates(p);
                 call_queue->push(p);
             }
 
             p = {y + 1, x};
-            if (Check(p) == true) {
+            if (Is_correct_coordinates(p) == true) {
                 Correct_coordinates(p);
                 call_queue->push(p);
             }
 
             p = {y, x - 1};
-            if (Check(p) == true) {
+            if (Is_correct_coordinates(p) == true) {
                 Correct_coordinates(p);
                 call_queue->push(p);
             }
 
             p = {y, x + 1};
-            if (Check(p) == true) {
+            if (Is_correct_coordinates(p) == true) {
                 Correct_coordinates(p);
                 call_queue->push(p);
             }
@@ -244,7 +350,7 @@ public:
         }
 
         if (!call_queue->empty()) {
-            Lee_algorithm(weawe_count + 1, call_queue);
+            Lee_algorithm(weawe_count + 1, call_queue, hero);
         }
 
         if (weawe_count == 0){
@@ -252,8 +358,9 @@ public:
         }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // МЕТОД ВОЗРАЩАЕТ FALSE, ЕСЛИ КООРДИНАТЫ НЕКОРРЕКТНЫ.
-    bool Check(point p){
+    bool Is_correct_coordinates(point p){
         Correct_coordinates(p);
         if (distance_map[p.Y][p.X] == INFINITY)
             return true;
@@ -261,6 +368,7 @@ public:
             return false;
 
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // МЕНЯЕТ КООРДИНАТЫ, ЕСЛИ ОНИ НЕКОРРЕКТНЫ.
     void Correct_coordinates(point& p){
@@ -277,9 +385,9 @@ public:
         this->hight = hight;
         this->width = width;
 
-        map = new char* [this->hight];
-        for ( int i = 0; i < this->hight; i++){
-            map[i] = new char [this->width];
+        map.resize(hight);
+        for (int i = 0; i < hight; i++){
+            map[i].resize(width);
         }
 
     }
@@ -287,23 +395,23 @@ public:
     // СОЗДАНИЕ И ИНИЦИАЛИЗИРОВАНИЕ distance_map
     void Create_distance_map(){
 
-        distance_map = new int* [hight];
-        for ( int i = 0; i < hight; i++){
-            distance_map[i] = new int [width];
+        distance_map.resize(hight);
+        for (int i = 0; i < hight; i++){
+            distance_map[i].resize(width);
         }
 
         for ( int i = 0; i < hight; i++){
             for (int j = 0; j < width; j++){
                 switch (map[i][j]){
-                case '#':
-                    distance_map[i][j] = WALL;
-                    break;
-                case '_':
-                    distance_map[i][j] = INFINITY;
-                    break;
-                default:
-                    distance_map[i][j] = 0;
-                    break;
+                    case '#':
+                        distance_map[i][j] = WALL;
+                        break;
+                    case '_':
+                        distance_map[i][j] = INFINITY;
+                        break;
+                    default:
+                        distance_map[i][j] = 0;
+                        break;
                 }
             }
         }
@@ -313,7 +421,7 @@ public:
     void Fill_bineary_maze() {
 
         int i, j,
-            direction;
+                direction;
         srand(time(NULL));
         for (i = 0; i < hight; i++){
             for (j = 0; j < width; j++){
@@ -362,8 +470,8 @@ public:
             while (cells[cells.size()-1].X + 1 != width){
 
                 if (rand()%2 == 1){
-                        map[cells[cells.size()-1].Y][cells[cells.size()-1].X + 1] = '_';
-                        cells.push_back({cells[cells.size()-1].Y, cells[cells.size()-1].X + 1});
+                    map[cells[cells.size()-1].Y][cells[cells.size()-1].X + 1] = '_';
+                    cells.push_back({cells[cells.size()-1].Y, cells[cells.size()-1].X + 1});
                 }
                 else{
                     int tmp = set_start + rand() % (cells.size()-set_start);
@@ -404,90 +512,90 @@ public:
         }
         cout << endl;
     }
-
-
-private:
-    char ** map;
-    int hight,
-        width;
-    int ** distance_map;
-    object hero = {INFINITY, INFINITY},
-           destination = {INFINITY, INFINITY};
 };
+
+
+
+
+
+
+
 
 
 int main() {
 
     bool not_escape = true;
-    string health = "***";
-    double score = 0,
-        best_score = 0;
-    int level_number = 0,
-        level_size_w = 7,
+
+    object hero; // ОБЪЕКТ ПЕРСОНАЖ
+    double best_score = 0;
+
+    int level_size_w = 7,
         level_size_h = 5;
     // ОТКРЫВАЕМ ПОТОК, СЧИТЫВАЕМ ЛУЧШИЙ СЧЁТ, ЗАКРЫВАЕМ ЕГО
     ifstream cin_score("score.txt");
     cin_score >> best_score;
     cin_score.close();
 
-    while(not_escape && (health.size() != 0)) {
+    while(not_escape && (hero.Get_healthbar() != 0)) {
 
         cout << "Level is loading...";
         level new_level;
-        if (level_number % 3 == 0) level_size_h++;
-        if (level_number % 2 == 0) level_size_w++;
+        if (hero.Get_level_number() % 3 == 0) level_size_h++;
+        if (hero.Get_level_number() % 2 == 0) level_size_w++;
 
 
         new_level.Create_map(level_size_h, level_size_w);
         new_level.Fill_sidewinder_maze();
         new_level.Create_distance_map();
-        new_level.Init_hero();
-        new_level.Get_hero().healthbar = health;
-        new_level.Lee_algorithm(0, NULL);
-        new_level.Init_destination();
-        level_number++;
-
+        new_level.Init_hero(hero);
+        new_level.Lee_algorithm(0, NULL, hero);
+        new_level.Init_destination(hero);
+        hero.Inc_level();
+        hero.Initializate_movement_count();
         system("cls");
 
-        while ((not_escape) && (health.size() != 0) && ((new_level.Get_hero().Y != new_level.Get_destination().Y) ||
-                                                        (new_level.Get_hero().X != new_level.Get_destination().X))){
-            cout << "Level " << level_number << endl;
-            cout << "Your score is " << score << endl;
+        while ((not_escape) && (hero.Get_healthbar() != 0) && ((hero.Get_rotation().Y != new_level.Get_destination().Y) ||
+                                                        (hero.Get_rotation().X != new_level.Get_destination().X))){
+            cout << "Level " << hero.Get_level_number() << endl;
+            cout << "Your score is " << hero.Get_score() << endl;
             cout << "The best score " << best_score << endl;
-            cout << "You did " << new_level.Get_hero().movement_count << " steps" << endl;
+            cout << "You did " << hero.Get_movement_count() << " steps" << endl;
             cout << "The best way containe " << new_level.Get_the_best_way() << " steps"  << endl;
-            cout << "Life: " << new_level.Get_hero().healthbar << endl;
+            cout << "Life: " << hero.Print_healthbar() << endl;
             new_level.Print_map();
 
-            new_level.Get_hero().Read_direction();
-            not_escape = (new_level.Get_hero().direction != ESCAPE);
-            if (new_level.Was_movement()) {
-                new_level.Get_hero().movement_count++;
+            hero.Read_direction();
+            not_escape = (hero.Get_direction() != ESCAPE);
+            if (new_level.Was_movement(hero)) {
+                hero.Inc_movement_count();
             }
-            health = new_level.Get_hero().healthbar;
+            else{
+                hero.Dec_health();
+            }
+
             system("cls");
         }
 
-        new_level.Get_direction({new_level.Get_destination().Y, new_level.Get_destination().X});
+        new_level.Pave_direction({new_level.Get_destination().Y, new_level.Get_destination().X}, hero);
         new_level.Print_map();
         cout << endl;
         //cout << "\nTo move on to the next level press any kye"<< endl;
         system("pause");
         system("cls");
 
-         score += new_level.Get_score();
-         if (score > best_score){
-             best_score = score;
+         hero.Change_score(new_level.Get_the_best_way());
+         if (hero.Get_score() > best_score){
+             best_score = hero.Get_score();
          }
 
     }
 
 
-    if (health == ""){
+    if (hero.Get_healthbar() == 0){
         cout << "You are dead" << "\n\n";
     }
-    cout << "You passed " << level_number << " levels" << endl;
-    cout << "Your score is " << setprecision(10) << score << endl;
+    cout << "You passed " << hero.Get_level_number() << " levels" << endl;
+    cout << "Your score is " << setprecision(10) << hero.Get_score() << endl;
     cout << "The best score is " << setprecision(10) << best_score << endl;
     cout << '\n';
     ofstream cout_score("score.txt");
