@@ -7,7 +7,25 @@
 #include <string>
 #include <iomanip>
 #include <stdlib.h>
+#include <vector>
 using namespace std;
+
+
+
+#define HORIZONTAL_WAY 205
+#define VERTICAL_WAY 186
+#define LEFT_DOWN_WAY 201
+#define LEFT_UP_WAY 200
+#define DOWN_LEFT_WAY 188
+#define UP_LEFT_WAY 187
+#define RIGHT_UP_WAY 188
+#define RIGHT_DOWN_WAY 187
+#define UP_RIGHT_WAY 201
+#define DOWN_RIGHT_WAY 200
+
+
+
+
 
 #define KEY_UP 'W'
 #define KEY_DOWN 'S'
@@ -19,11 +37,10 @@ using namespace std;
 
 
 
-
-
 struct point{
     int Y;
     int X;
+
 };
 
 
@@ -113,7 +130,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // МЕНЯЕТ СЧЁТ
     void Change_score(int best_way){
-      score += best_way-movement_count+5*1.46741346546515156487;
+      score += (best_way-movement_count)*1.10141211646546+2*1.46741346546515156487;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -172,12 +189,21 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ПРОКЛАДЫВАЕТ НАИЛУЧШЙ МАРШРУТ
     bool Mark_point_in_direction(point old_coordinate,point new_coordinate, const object hero){
+
         Correct_coordinates(new_coordinate);
+
         if (distance_map[old_coordinate.Y][old_coordinate.X]-1 == distance_map[new_coordinate.Y][new_coordinate.X]){
+
             Pave_direction(new_coordinate, hero);
             return true;
         }
         return false;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ПРОВЕРЯЕТ, СТОИТ ЛИ ЭТОТ sign В ПОЗИЦИИ point
+    bool Is_this_sign(point coordinate) const{
+        return ((map[coordinate.Y][coordinate.X] != '_') && (map[coordinate.Y][coordinate.X] != '#'));
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -196,8 +222,56 @@ public:
         if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y, old_coordinate.X-1}, hero));
 
         if (distance_map[old_coordinate.Y][old_coordinate.X] == 0){
-            map[old_coordinate.Y][old_coordinate.X] = 'S';
-            map[hero.Get_rotation().Y][hero.Get_rotation().X] = 'F';
+
+            for (int i = 0; i < hight; i++){
+                for (int j = 0; j < width; j++){
+                    if (map[i][j] == '+') {
+
+
+                        map[old_coordinate.Y][old_coordinate.X] = 'S';
+                        map[destination.Y][destination.X] = 'F';
+
+                        if (Is_this_sign(Get_correct_coordinates({i-1, j})) && Is_this_sign(Get_correct_coordinates({i+1, j}))){
+                            map[i][j] = VERTICAL_WAY;
+                        } else
+                        if (Is_this_sign(Get_correct_coordinates({i, j-1})) && Is_this_sign(Get_correct_coordinates({i, j+1}))){
+                            map[i][j] = HORIZONTAL_WAY;
+                        } else
+                        if (Is_this_sign(Get_correct_coordinates({i, j+1})) && Is_this_sign(Get_correct_coordinates({i+1, j}))) {
+                            map[i][j] = LEFT_DOWN_WAY;
+                        } else
+                        if (Is_this_sign(Get_correct_coordinates({i, j+1})) && Is_this_sign(Get_correct_coordinates({i-1, j}))){
+                            map[i][j] = LEFT_UP_WAY;
+                        } else
+                        if (Is_this_sign(Get_correct_coordinates({i-1, j})) && Is_this_sign(Get_correct_coordinates({i+1, j}))){
+                            map[i][j] = DOWN_LEFT_WAY;
+                        } else
+                        if (Is_this_sign(Get_correct_coordinates({i+1, j})) && Is_this_sign(Get_correct_coordinates({i-1, j}))){
+                            map[i][j] = UP_LEFT_WAY;
+                        } else
+                        if (Is_this_sign(Get_correct_coordinates({i, j-1})) && Is_this_sign(Get_correct_coordinates({i-1, j}))){
+                            map[i][j] = RIGHT_UP_WAY;
+                        } else
+                        if (Is_this_sign(Get_correct_coordinates({i, j-1})) && Is_this_sign(Get_correct_coordinates({i+1, j}))) {
+                            map[i][j] = RIGHT_DOWN_WAY;
+                        } else
+                        if (Is_this_sign(Get_correct_coordinates({i+1, j})) && Is_this_sign(Get_correct_coordinates({i-1, j}))){
+                            map[i][j] = UP_RIGHT_WAY;
+                        } else
+                        if (Is_this_sign(Get_correct_coordinates({i-1, j})) && Is_this_sign(Get_correct_coordinates({i+1, j}))){
+                            map[i][j] = DOWN_RIGHT_WAY;
+                        }
+
+
+
+
+
+
+
+                    }
+
+                }
+            }
         }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -379,6 +453,19 @@ public:
         if (p.Y == hight) p.Y = 0;
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ВОЗВРАЩАЕТ ИСПРАВЛЕННЫЕ КООРДИНАТЫ, ЕСЛИ ОНИ НЕКОРРЕКТНЫ.
+    point Get_correct_coordinates(point p){
+        if (p.X == -1) p.X = width-1;
+        if (p.X == width) p.X = 0;
+
+        if (p.Y == -1) p.Y = hight-1;
+        if (p.Y == hight) p.Y = 0;
+
+        return p;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // СОЗДАНИЕ map
     void Create_map(int hight, int width){
 
@@ -527,7 +614,8 @@ int main() {
     bool not_escape = true;
 
     object hero; // ОБЪЕКТ ПЕРСОНАЖ
-    double best_score = 0;
+    double best_score = 0,
+           old_score = 0;
 
     int level_size_w = 7,
         level_size_h = 5;
@@ -540,8 +628,8 @@ int main() {
 
         cout << "Level is loading...";
         level new_level;
-        if (hero.Get_level_number() % 3 == 0) level_size_h++;
-        if (hero.Get_level_number() % 2 == 0) level_size_w++;
+        if (hero.Get_level_number() % 3 == 0) level_size_h += 3;
+        if (hero.Get_level_number() % 2 == 0) level_size_w += 3;
 
 
         new_level.Create_map(level_size_h, level_size_w);
@@ -555,9 +643,10 @@ int main() {
         system("cls");
 
         while ((not_escape) && (hero.Get_healthbar() != 0) && ((hero.Get_rotation().Y != new_level.Get_destination().Y) ||
-                                                        (hero.Get_rotation().X != new_level.Get_destination().X))){
+                                                               (hero.Get_rotation().X != new_level.Get_destination().X))){
             cout << "Level " << hero.Get_level_number() << endl;
-            cout << "Your score is " << hero.Get_score() << endl;
+            cout << "Your score is " << setprecision(3) << setw(3) << fixed <<setfill('0') << left << hero.Get_score()
+                              << " (" << showpos << setprecision(3) << setw(3) << fixed << setfill('0') << left  << hero.Get_score() - old_score << " - for last level)" << endl << noshowpos;
             cout << "The best score " << best_score << endl;
             cout << "You did " << hero.Get_movement_count() << " steps" << endl;
             cout << "The best way containe " << new_level.Get_the_best_way() << " steps"  << endl;
@@ -583,20 +672,28 @@ int main() {
         system("pause");
         system("cls");
 
+         old_score = hero.Get_score(); // Запоминаем старое значение.
+
          hero.Change_score(new_level.Get_the_best_way());
          if (hero.Get_score() > best_score){
              best_score = hero.Get_score();
          }
 
+
     }
 
 
     if (hero.Get_healthbar() == 0){
-        cout << "You are dead" << "\n\n";
+        cout << "You are dead" << endl;
+        for (int i = 0; i < 25; i++){
+            cout << '-';
+        }
+        cout << endl;
     }
+
     cout << "You passed " << hero.Get_level_number() << " levels" << endl;
-    cout << "Your score is " << setprecision(10) << hero.Get_score() << endl;
-    cout << "The best score is " << setprecision(10) << best_score << endl;
+    cout << "Your score is " << hero.Get_score() << endl;
+    cout << "The best score is "  << best_score << endl;
     cout << '\n';
     ofstream cout_score("score.txt");
     cout_score << best_score;
