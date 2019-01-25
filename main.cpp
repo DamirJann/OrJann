@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <stdlib.h>
 #include <vector>
+#include <cstdlib>
 using namespace std;
 
 
@@ -31,7 +32,14 @@ using namespace std;
 #define KEY_DOWN 'S'
 #define KEY_LEFT 'A'
 #define KEY_RIGHT 'D'
+#define WALL_CHAR '#'
+#define SPACE_CHAR '_'
+#define HERO_CHAR '@'
+#define DESTINATION_CHAR 'X'
+
 #define ESCAPE 27
+#define ENTER 13
+
 #define WALL 99999999
 #define INFINITY 8888888
 
@@ -43,12 +51,19 @@ struct point{
 
 };
 
+void Print_dash(int width){
+    for (int i = 0; i < width; i++){
+        cout << '-';
+    }
+
+}
+
 
 class object {
 private:
     point rotation;
-    int score, movement_count,
-        healthbar, level_number;
+    double score;
+    int movement_count, healthbar, level_number;
     char direction = INFINITY;
 public:
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,7 +145,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // МЕНЯЕТ СЧЁТ
     void Change_score(int best_way){
-      score += (best_way-movement_count)*1.10141211646546+2*1.46741346546515156487;
+      score += (best_way-movement_count+level_number*0.4074645546)*1.10141211646546+2*1.46741346546515156487;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -203,7 +218,7 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ПРОВЕРЯЕТ, СТОИТ ЛИ ЭТОТ sign В ПОЗИЦИИ point
     bool Is_this_sign(point coordinate) const{
-        return ((map[coordinate.Y][coordinate.X] != '_') && (map[coordinate.Y][coordinate.X] != '#'));
+        return ((map[coordinate.Y][coordinate.X] != SPACE_CHAR) && (map[coordinate.Y][coordinate.X] != WALL_CHAR));
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -261,15 +276,7 @@ public:
                         if (Is_this_sign(Get_correct_coordinates({i-1, j})) && Is_this_sign(Get_correct_coordinates({i+1, j}))){
                             map[i][j] = DOWN_RIGHT_WAY;
                         }
-
-
-
-
-
-
-
                     }
-
                 }
             }
         }
@@ -332,9 +339,9 @@ public:
         // ОБРАБОТКА ВЫХОДА ЗА ГРАНИЦУ КАРТЫ
         Correct_coordinates(new_rotate);
 
-        if (map[new_rotate.Y][new_rotate.X] != '#'){
-            map[new_rotate.Y][new_rotate.X] = '!';
-            map[hero.Get_rotation().Y][hero.Get_rotation().X] = '_';
+        if (map[new_rotate.Y][new_rotate.X] != WALL_CHAR){
+            map[new_rotate.Y][new_rotate.X] = HERO_CHAR;
+            map[hero.Get_rotation().Y][hero.Get_rotation().X] = SPACE_CHAR;
             hero.Change_rotation({new_rotate.Y, new_rotate.X});
             return true;
         }
@@ -344,17 +351,25 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ИНИЦИАЛИЗАЦИЯ РАСПЛОЖЕНИЯ КЛАДА
     void Init_destination(const object hero){
-        bool flag = true;
-        while (flag){
-            srand(time(NULL));
+        int count = 0, max_distance = -1;
+        srand(time(NULL));
+        while (count != 40) {
+
             int x = rand() % width;
             int y = rand() % hight;
+
             if ((distance_map[y][x] != WALL) && (distance_map[y][x] != INFINITY) && (x != hero.Get_rotation().X || y != hero.Get_rotation().Y)) {
-                map[y][x] = 'X';
-                flag = false;
-                destination = {y, x};
+                count++;
+                if (distance_map[y][x] > max_distance) {
+                    destination = {y, x};
+                    max_distance = distance_map[y][x];
+                }
             }
         }
+
+        map[destination.Y][destination.X] = DESTINATION_CHAR;
+
+
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -365,8 +380,8 @@ public:
             srand(time(NULL));
             int x = rand() % width;
             int y = rand() % hight;
-            if (map[y][x] == '_') {
-                map[y][x] = '!';
+            if (map[y][x] == SPACE_CHAR) {
+                map[y][x] = HERO_CHAR;
                 distance_map[y][x] = 0;
                 flag = false;
                 hero.Change_rotation({y, x});
@@ -394,7 +409,7 @@ public:
             point p;
 
             distance_map[y][x] = min(weawe_count, distance_map[y][x]);
-
+            if (distance_map[y][x] == INFINITY) exit(228);
             p = {y - 1, x};
             if (Is_correct_coordinates(p) == true) {
                 Correct_coordinates(p);
@@ -490,10 +505,10 @@ public:
         for ( int i = 0; i < hight; i++){
             for (int j = 0; j < width; j++){
                 switch (map[i][j]){
-                    case '#':
+                    case WALL_CHAR:
                         distance_map[i][j] = WALL;
                         break;
-                    case '_':
+                    case SPACE_CHAR:
                         distance_map[i][j] = INFINITY;
                         break;
                     default:
@@ -512,24 +527,24 @@ public:
         srand(time(NULL));
         for (i = 0; i < hight; i++){
             for (j = 0; j < width; j++){
-                map[i][j] = '#';
+                map[i][j] = WALL_CHAR;
             }
         }
         for (j = 0; j < width; j++) {
-            map[0][j] == '_';
+            map[0][j] = SPACE_CHAR;
         }
         for (i = 0; i < hight; i++) {
-            map[i][width-1] == '_';
+            map[i][width-1] = SPACE_CHAR;
         }
 
         for (i = 1; i < hight; i++){
             for (j = 0; j < width - 1; j++){
                 direction = rand() % 2;
                 if (direction == 0){
-                    map[i-1][j] = '_';
+                    map[i-1][j] = SPACE_CHAR;
                 }
                 else{
-                    map[i][j+1] = '_';
+                    map[i][j+1] = SPACE_CHAR;
                 }
             }
         }
@@ -545,7 +560,7 @@ public:
 
         for (i = 0; i < hight; i++) {
             for (j = 0; j < width; j++) {
-                map[i][j] = '#';
+                map[i][j] = WALL_CHAR;
             }
         }
 
@@ -557,13 +572,13 @@ public:
             while (cells[cells.size()-1].X + 1 != width){
 
                 if (rand()%2 == 1){
-                    map[cells[cells.size()-1].Y][cells[cells.size()-1].X + 1] = '_';
+                    map[cells[cells.size()-1].Y][cells[cells.size()-1].X + 1] = SPACE_CHAR;
                     cells.push_back({cells[cells.size()-1].Y, cells[cells.size()-1].X + 1});
                 }
                 else{
                     int tmp = set_start + rand() % (cells.size()-set_start);
                     if (cells[tmp].Y != 0){
-                        map[cells[tmp].Y-1][cells[tmp].X] = '_';
+                        map[cells[tmp].Y-1][cells[tmp].X] = SPACE_CHAR;
                     }
                     cells.push_back({cells[cells.size()-1].Y, cells[cells.size()-1].X + 1});
                 }
@@ -603,7 +618,21 @@ public:
 
 
 
+class new_game{
+private:
+    int level_size_hight,
+        level_size_width;
 
+public:
+    new_game(): level_size_hight(5), level_size_width(7)
+        {
+            bool not_escape = true;
+            object hero; // ОБЪЕКТ ПЕРСОНАЖ
+            double best_score = 0,
+                    old_score = 0;
+
+        }
+};
 
 
 
@@ -628,8 +657,8 @@ int main() {
 
         cout << "Level is loading...";
         level new_level;
-        if (hero.Get_level_number() % 3 == 0) level_size_h += 3;
-        if (hero.Get_level_number() % 2 == 0) level_size_w += 3;
+        if (hero.Get_level_number() % 3 == 0) level_size_h += 2;
+        if (hero.Get_level_number() % 2 == 0) level_size_w += 5;
 
 
         new_level.Create_map(level_size_h, level_size_w);
@@ -645,8 +674,8 @@ int main() {
         while ((not_escape) && (hero.Get_healthbar() != 0) && ((hero.Get_rotation().Y != new_level.Get_destination().Y) ||
                                                                (hero.Get_rotation().X != new_level.Get_destination().X))){
             cout << "Level " << hero.Get_level_number() << endl;
-            cout << "Your score is " << setprecision(3) << setw(3) << fixed <<setfill('0') << left << hero.Get_score()
-                              << " (" << showpos << setprecision(3) << setw(3) << fixed << setfill('0') << left  << hero.Get_score() - old_score << " - for last level)" << endl << noshowpos;
+            cout << "Your score is " << setprecision(4) << setw(4) << fixed <<setfill('0') << left << hero.Get_score()
+                              << " (" << showpos << setprecision(4) << setw(4) << fixed << setfill('0') << left  << hero.Get_score() - old_score << " - for last level)" << endl << noshowpos;
             cout << "The best score " << best_score << endl;
             cout << "You did " << hero.Get_movement_count() << " steps" << endl;
             cout << "The best way containe " << new_level.Get_the_best_way() << " steps"  << endl;
@@ -665,39 +694,58 @@ int main() {
             system("cls");
         }
 
+
+        old_score = hero.Get_score(); // Запоминаем старое значение.
+
+        hero.Change_score(new_level.Get_the_best_way());
+        if (hero.Get_score() > best_score){
+            best_score = hero.Get_score();
+        }
+
+
+        if (hero.Get_healthbar() == 0 ){
+            Print_dash(strlen("I Know, It's Over..."));
+            cout << endl;
+            cout << "I Know, It's Over..." ;
+            cout << endl;
+            Print_dash(strlen("I Know, It's Over..."));
+            cout << endl;
+        }
+        else {
+            Print_dash(strlen("To move on to the next level press enter"));
+            cout << endl;
+            cout << "To move on to the next level press enter";
+            cout << endl;
+            Print_dash(strlen("To move on to the next level press enter"));
+        }
+        cout << endl;
+
+        cout << "Level " << hero.Get_level_number() << endl;
+        cout << "Your score is " << setprecision(4) << setw(4) << fixed <<setfill('0') << left << hero.Get_score()
+             << " (" << showpos << setprecision(4) << setw(4) << fixed << setfill('0') << left  << hero.Get_score() - old_score << " - for this level)" << endl << noshowpos;
+        cout << "The best score " << best_score << endl;
+        cout << "You did " << hero.Get_movement_count() << " steps" << endl;
+        cout << "The best way containe " << new_level.Get_the_best_way() << " steps"  << endl;
+        cout << "Life: " << hero.Print_healthbar() << endl;
+
         new_level.Pave_direction({new_level.Get_destination().Y, new_level.Get_destination().X}, hero);
         new_level.Print_map();
         cout << endl;
-        //cout << "\nTo move on to the next level press any kye"<< endl;
-        system("pause");
+        if (hero.Get_healthbar() == 0 ){
+            cout << endl;
+            cout << "* Press enter to exit";
+        }
+
+
+        while (getch() != ENTER);
         system("cls");
 
-         old_score = hero.Get_score(); // Запоминаем старое значение.
-
-         hero.Change_score(new_level.Get_the_best_way());
-         if (hero.Get_score() > best_score){
-             best_score = hero.Get_score();
-         }
-
-
     }
 
 
-    if (hero.Get_healthbar() == 0){
-        cout << "You are dead" << endl;
-        for (int i = 0; i < 25; i++){
-            cout << '-';
-        }
-        cout << endl;
-    }
-
-    cout << "You passed " << hero.Get_level_number() << " levels" << endl;
-    cout << "Your score is " << hero.Get_score() << endl;
-    cout << "The best score is "  << best_score << endl;
     cout << '\n';
     ofstream cout_score("score.txt");
     cout_score << best_score;
     cout_score.close();
-    system("pause");
     return 0;
 }
