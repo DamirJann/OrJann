@@ -11,7 +11,7 @@
 #include <cstdlib>
 using namespace std;
 
-
+char HERO_CHAR('!');
 
 #define HORIZONTAL_WAY 205
 #define VERTICAL_WAY 186
@@ -25,17 +25,15 @@ using namespace std;
 #define DOWN_RIGHT_WAY 200
 
 
-
-
-
 #define KEY_UP 'W'
 #define KEY_DOWN 'S'
 #define KEY_LEFT 'A'
 #define KEY_RIGHT 'D'
 #define WALL_CHAR '#'
 #define SPACE_CHAR '_'
-#define HERO_CHAR '@'
 #define DESTINATION_CHAR 'X'
+#define POINTER char(250)
+
 
 #define ESCAPE 27
 #define ENTER 13
@@ -43,7 +41,16 @@ using namespace std;
 #define WALL 99999999
 #define INFINITY 8888888
 
-
+void Print_text_between_lines(string text){
+    for (int i = 0; i < text.size(); i++){
+        cout << '-';
+    }
+    cout << endl << text << endl;
+    for (int i = 0; i < text.size(); i++){
+        cout << '-';
+    }
+    cout << endl;
+}
 
 struct point{
     int Y;
@@ -51,11 +58,46 @@ struct point{
 
 };
 
-void Print_dash(int width){
-    for (int i = 0; i < width; i++){
-        cout << '-';
+
+char Read_direction(){
+    char tmp_direction;
+    int i = getch();
+    if (i == 224) {
+        i = getch();
+        switch (i)
+        {
+            case 72:
+                tmp_direction = 'W';
+                break;
+            case 80:
+                tmp_direction = 'S';
+                break;
+            case 75:
+                tmp_direction = 'A';
+                break;
+            case 77:
+                tmp_direction = 'D';
+                break;
+            default:
+                break;
+        }
+    } else {
+
+        i = toupper(i);
+        switch(i){
+            case 'Ф':
+                i = 'A';
+            case 'В':
+                i = 'D';
+            case 'Ц':
+                i = 'W';
+            case 'Ч':
+                i = 'X';
+        }
+        tmp_direction = i;
     }
 
+    return tmp_direction;
 }
 
 
@@ -69,121 +111,114 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // КОНСТРУКТОР ИНИЦИАЛИЗАЦИИ
-    object(): score(0), movement_count(0),
-              healthbar(3), level_number(0),
-              direction(INFINITY) {}
+    object() : score(0), movement_count(0),
+               healthbar(3), level_number(0),
+               direction(INFINITY) {}
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВЫДАЁТ СЧЁТ
-    double  Get_score() const{
+    double Get_score() const {
         return score;
-     }
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ОБНУЛЯЕТ СЧЁТЧИК ШАГОВ
-    void Initializate_movement_count(){
+    void Initializate_movement_count() {
         movement_count = 0;
     }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВОЗВРАЩАЕТ ЗДОРОВЬЕ
-    int Get_healthbar() const{
+    int Get_healthbar() const {
         return healthbar;
     }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВОЗВРАЩАЕТ НАПРАВЛЕНИЕ ДВИЖЕНИЯ
-    char Get_direction() const{
+    char Get_direction() const {
         return direction;
     }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВОЗВРАЩАЕТ КОЛИЧЕСТВО СДЕЛАННЫХ ШАГОВ
-    int Get_movement_count() const{
+    int Get_movement_count() const {
         return movement_count;
     }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВОЗВРАЩАЕТ КОЛИЧЕСТВО СДЕЛАННЫХ ШАГОВ
-    void Inc_movement_count(){
+    void Inc_movement_count() {
         movement_count++;
     }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ИНКРЕМЕНТИРУЕТ level_number
-    void  Inc_level(){
+    void Inc_level() {
         level_number++;
     }
+
     // ИНКРЕМЕНТИРУЕТ level_number
-    void  Change_rotation(point new_rotation){
+    void Change_rotation(point new_rotation) {
         rotation = new_rotation;
     }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // УБИРАЕТ ОДНУ ЖИЗНЬ
-    void  Dec_health(){
+    void Dec_health() {
         healthbar--;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВОЗВРАЩАЕТ level_number
-    int  Get_level_number() const{
+    int Get_level_number() const {
         return level_number;
     }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВОЗВРАЩАЕТ ПОЛОСКУ ЖИЗНИ
-    string  Print_healthbar() const{
+    string Print_healthbar() const {
         string result("");
-        for (int i = 0; i < healthbar; i++){
+        for (int i = 0; i < healthbar; i++) {
             result += '*';
         }
         return result;
     }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // МЕНЯЕТ СЧЁТ
-    void Change_score(int best_way){
-      score += (best_way-movement_count+level_number*0.4074645546)*1.10141211646546+2*1.46741346546515156487;
+    void Change_score(int best_way) {
+        score += ((best_way - movement_count)*1.956132145 + level_number * 0.1074645546) * 1.10141211646546 +
+                 2 * 1.46741346546515156487;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВОЗВРАЩАЕТ МЕСТОПОЛОЖЕНИЕ ИГРОКА
-    point Get_rotation() const{
+    point Get_rotation() const {
         return rotation;
     }
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // ВВОД НАПРАВЛЕНИЯ И ИНИЦИАЛИЗАЦИЯ direction
-    void Read_direction() {
-        int i = getch();
-        if (i == 224) {
-            i = getch();
-            switch (i)
-            {
-                case 72:
-                    direction = 'W';
-                    break;
-                case 80:
-                    direction = 'S';
-                    break;
-                case 75:
-                    direction = 'A';
-                    break;
-                case 77:
-                    direction = 'D';
-                    break;
-                default:
-                    break;
-            }
-        } else {
-            direction = toupper(i);
-        }
-    }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ПРИСВАИВАЕТ ЗНАЧЕНИЕ direction, вызывая Read_direction
+    void Init_direction() {
+        direction = Read_direction();
+    }
 };
+
+
+
 
 
 class level{
@@ -494,6 +529,7 @@ public:
 
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // СОЗДАНИЕ И ИНИЦИАЛИЗИРОВАНИЕ distance_map
     void Create_distance_map(){
 
@@ -519,11 +555,11 @@ public:
         }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ИНИЦИАЛИЗАЦИЯ ЛАБИРИНТА ДВОИЧНЫМ СПОСОБОМ
     void Fill_bineary_maze() {
 
-        int i, j,
-                direction;
+        int i, j, direction;
         srand(time(NULL));
         for (i = 0; i < hight; i++){
             for (j = 0; j < width; j++){
@@ -550,6 +586,7 @@ public:
         }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ИНИЦИАЛИЗАЦИЯ ЛАБИРИНТА С ПОМОЩЬЮ SIDEWINDER
     void Fill_sidewinder_maze() {
 
@@ -571,7 +608,7 @@ public:
             int a;
             while (cells[cells.size()-1].X + 1 != width){
 
-                if (rand()%2 == 1){
+                if (rand()% 2 == 1){
                     map[cells[cells.size()-1].Y][cells[cells.size()-1].X + 1] = SPACE_CHAR;
                     cells.push_back({cells[cells.size()-1].Y, cells[cells.size()-1].X + 1});
                 }
@@ -593,6 +630,7 @@ public:
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВЫВОД КАРТЫ
     void  Print_map() {
         for (int i = 0; i < hight; i++) {
@@ -603,6 +641,7 @@ public:
         }
         cout << endl;
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ВЫВОД КАРТЫ РАССТОЯНИЙ
     void Print_distance_map(){
@@ -618,134 +657,467 @@ public:
 
 
 
-class new_game{
+class game{
 private:
-    int level_size_hight,
-        level_size_width;
+    int level_size_hight, level_size_width;
+    double best_score, last_score, worse_score;
+    bool not_escape;
+    object hero;
 
 public:
-    new_game(): level_size_hight(5), level_size_width(7)
-        {
-            bool not_escape = true;
-            object hero; // ОБЪЕКТ ПЕРСОНАЖ
-            double best_score = 0,
-                    old_score = 0;
+    game(): level_size_hight(5), level_size_width(7), last_score(0), not_escape(true) {
+        ifstream cin_score("score.txt");
+        cin_score >> best_score >> worse_score;
+        cin_score.close();
+    }
 
+    void Launch_new_game(){
+
+        while(not_escape && (hero.Get_healthbar() != 0)) {
+
+            cout << "Level is loading...";
+            level new_level;
+            if (hero.Get_level_number() % 3 == 0) level_size_hight += 2;
+            if (hero.Get_level_number() % 2 == 0) level_size_width += 5;
+
+
+            new_level.Create_map(level_size_hight, level_size_width);
+            new_level.Fill_sidewinder_maze();
+            new_level.Create_distance_map();
+            new_level.Init_hero(hero);
+            new_level.Lee_algorithm(0, NULL, hero);
+            new_level.Init_destination(hero);
+            hero.Inc_level();
+            hero.Initializate_movement_count();
+            system("cls");
+
+            while ((not_escape) && (hero.Get_healthbar() != 0) && ((hero.Get_rotation().Y != new_level.Get_destination().Y) ||
+                                                                   (hero.Get_rotation().X != new_level.Get_destination().X))){
+                cout << "Level " << hero.Get_level_number() << "\n\n";
+                cout << "Your score: " << setprecision(4) << setw(4) << fixed <<setfill('0') << left << hero.Get_score()
+                     << " (" << showpos << setprecision(4) << setw(4) << fixed << setfill('0') << left  << hero.Get_score() - last_score << " - for last level)" << endl << noshowpos;
+                cout << "The best score: " << best_score << endl;
+                cout << "The worse score: " << worse_score << endl;
+                cout << "You did: " << hero.Get_movement_count() << " steps" << endl;
+                cout << "The best way: " << new_level.Get_the_best_way() << " steps"  << endl;
+                cout << "Life: " << hero.Print_healthbar() << endl;
+                new_level.Print_map();
+
+                hero.Init_direction();
+                not_escape = (hero.Get_direction() != ESCAPE);
+                if (new_level.Was_movement(hero)) {
+                    hero.Inc_movement_count();
+                }
+                else if ((hero.Get_direction() == 'A' ) || (hero.Get_direction() == 'D') ||
+                        (hero.Get_direction() == 'S') || (hero.Get_direction() == 'W')){
+                    hero.Dec_health();
+                }
+
+                system("cls");
+            }
+
+
+            last_score = hero.Get_score(); // Запоминаем старое значение.
+
+            if ((hero.Get_healthbar() != 0) && (not_escape == true)){    // ЕСЛИ УРОВЕНЬ НЕ БЫЛ ПРЕЖДЕВРЕМЕННО ЗАВЕРШЁН И ПЕРСОНАЖ НЕ УМЕР, ТО МЕНЯЕМ СЧЁТ
+                hero.Change_score(new_level.Get_the_best_way());
+            }
+
+            // ИЗМЕНЯЕМ МАКСИМАЛЬНЫЙ И МИНИМАЛЬНЫЙ СЧЁТ
+            if (hero.Get_score() > best_score){
+                best_score = hero.Get_score();
+            }
+            if (hero.Get_score() < worse_score){
+                worse_score = hero.Get_score();
+            }
+
+
+            if (hero.Get_healthbar() == 0 ){
+                Print_text_between_lines("I Know, It's Over...");
+            }
+            else {
+                if (not_escape == true) {
+                    Print_text_between_lines("To move on to the next level press enter");
+                }
+                else{
+                    Print_text_between_lines("To return to menu press enter");
+                }
+            }
+            cout << endl;
+
+            cout << "Level " << hero.Get_level_number() << endl;
+            cout << "Your score:" << setprecision(4) << setw(4) << fixed <<setfill('0') << left << hero.Get_score()
+                 << " (" << showpos << setprecision(4) << setw(4) << fixed << setfill('0') << left  << hero.Get_score() - last_score << " - for this level)" << endl << noshowpos;
+            cout << "The best score:" << best_score << endl;
+            cout << "You did: " << hero.Get_movement_count() << " steps" << endl;
+            cout << "The best way contains: " << new_level.Get_the_best_way() << " steps"  << endl;
+            cout << "Life: " << hero.Print_healthbar() << endl;
+
+            new_level.Pave_direction({new_level.Get_destination().Y, new_level.Get_destination().X}, hero);
+            new_level.Print_map();
+            cout << endl;
+            if (hero.Get_healthbar() == 0 ){
+                cout << endl;
+                cout << "* Press enter to exit";
+            }
+
+
+            while (getch() != ENTER);
+            system("cls");
+
+        }
+
+
+        ofstream cout_score("score.txt");
+        cout_score << best_score << ' ' << worse_score;
+        cout_score.close();
+    }
+};
+
+
+class main_menu{
+
+    private:
+        enum {NEW_GAME, HEROES, RESULTS, EXIT}; // ВОПРОС, ОНИ ИСПОЛЬЗУЮТСЯ В РАЗНЫЕ МЕТОДАХ, ХОТЯ НАЗВАНИЯ ПЕРЕСЕКАЮТСЯ!
+        enum {MAN_MANIFESTO, DIAMOND_DOG, YARDBIRD, CAPITALIST, BIRDMAN, BANKIR, BLUEBIRD, BACK_TO_MENU};
+
+    public:
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // КОНСТРУКТОР, ИНИЦИАЛИЗИРУЮЙИЙ HERO_CHAR
+        main_menu(){
+            int chosen_hero;
+            ifstream cin_score("hero.txt");
+            cin_score >> chosen_hero;
+            Change_HERO_CHAR(chosen_hero);
+            cin_score.close();
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // ДЕСТРУКТОР
+        ~main_menu(){
+            int hero_id;
+            ifstream cin_hero("hero.txt");
+            cin_hero >> hero_id;
+            cin_hero.close();
+            Get_hero_id(HERO_CHAR);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // ЗАПУСКАЕТ ГЛАВНОЕ МЕНЮ
+        void Launch_menu() {
+
+            bool not_exit(true);
+            int chosen_elem = 0;
+            while (not_exit) {
+
+                Print_text_between_lines("OrJann");
+
+
+                if (chosen_elem == NEW_GAME) {
+                    cout << '~';
+                }
+                cout << "New game" << endl;
+
+                if (chosen_elem == HEROES) {
+                    cout << '~';
+                }
+                cout << "Heroes" << endl;
+
+
+                if (chosen_elem == RESULTS) {
+                    cout << '~';
+                }
+                cout << "Results" << endl;
+
+                if (chosen_elem == EXIT) {
+                    cout << '~';
+                }
+                cout << "Exit";
+
+
+                char direction = Read_direction();
+
+                system("cls");
+
+                if (direction == 'W') {
+                    chosen_elem--;
+                }
+                if (direction == 'S') {
+                    chosen_elem++;
+                }
+                if (chosen_elem == -1) chosen_elem = EXIT;
+                if (chosen_elem == 4) chosen_elem = NEW_GAME;
+                if (direction == ENTER) {
+                    switch (chosen_elem) {
+
+                        case NEW_GAME:{
+                            game new_game;
+                            new_game.Launch_new_game();
+                            break;
+                        }
+                        case HEROES:{
+                            Launch_heroes_menu();
+                            break;
+                        }
+                        case RESULTS:{
+                            Launch_Results_menu();
+                            break;
+                        }
+                        case EXIT:{
+                            not_exit = false;
+                        }
+
+                    }
+                }
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //
+        void Launch_heroes_menu(){
+            int arrow(0), chosen_hero(Get_hero_id(HERO_CHAR));
+            bool not_escape(true);
+            char direction('8');
+
+            while (direction != ESCAPE) {
+
+                Print_text_between_lines("Heroes");
+
+                if (arrow == MAN_MANIFESTO) cout << '~';
+
+                cout << "Man-manifesto(!)";
+                if (chosen_hero == MAN_MANIFESTO) cout << " <-";
+
+                cout << endl;
+
+                if (arrow == DIAMOND_DOG) cout << '~';
+                cout << "Diamond dog(@)";
+
+                if (chosen_hero == DIAMOND_DOG) cout << " <-";
+
+                cout << endl;
+
+                if (arrow == YARDBIRD) cout << '~';
+                cout << "Yardbird(^)";
+
+                if (chosen_hero == YARDBIRD) cout << " <-";
+
+                cout << endl;
+
+
+                if (arrow == CAPITALIST) cout << '~';
+                cout << "Capitalist($)";
+
+                if (chosen_hero == CAPITALIST) cout << " <-";
+
+                cout << endl;
+
+
+                if (arrow == BIRDMAN) cout << '~';
+                cout << "Birdman(>)";
+
+                if (chosen_hero == BIRDMAN) cout << " <-";
+
+                cout << endl;
+
+
+                if (arrow == BANKIR) cout << '~';
+                cout << "Bankir(%)";
+
+                if (chosen_hero == BANKIR) cout << " <-";
+
+                cout << endl;
+
+
+
+                if (arrow == BLUEBIRD) cout << '~';
+                cout << "Bluebird(<)";
+
+                if (chosen_hero == BLUEBIRD) cout << " <-";
+
+                cout << "\n\n";
+
+                if (arrow == BACK_TO_MENU) cout << '~';
+                cout << "Back to menu";
+
+                direction = Read_direction();
+                switch (direction){
+                    case 'W':
+                        arrow--;
+                        break;
+                    case 'S':
+                        arrow++;
+                        break;
+                    case ENTER:
+                        if (arrow == 7){
+                            direction = ESCAPE;
+                        }
+                        else{
+                            chosen_hero = arrow;
+                            Change_HERO_CHAR(chosen_hero);
+
+                            ofstream cout_hero("hero.txt");
+                            cout_hero << Get_hero_id(HERO_CHAR);
+                            cout_hero.close();
+                        }
+                        break;
+                }
+                if (arrow == -1) arrow = 7;
+                if (arrow == 8) arrow = 0;
+
+                system("cls");
+            }
+
+
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // ИЗМЕНЯЕТ КОНСТАНТУ HERO_CHAR
+        void Change_HERO_CHAR(int chosen_hero){
+            switch  (chosen_hero){
+                case MAN_MANIFESTO:
+                    HERO_CHAR = '!';
+                    break;
+                case DIAMOND_DOG:
+                    HERO_CHAR = '@';
+                    break;
+                case YARDBIRD:
+                    HERO_CHAR = '^';
+                    break;
+                case CAPITALIST:
+                    HERO_CHAR = '$';
+                    break;
+                case BIRDMAN:
+                    HERO_CHAR = '>';
+                    break;
+                case BANKIR:
+                    HERO_CHAR = '%';
+                    break;
+                case BLUEBIRD:
+                    HERO_CHAR = '<';
+                    break;
+                default:
+                    exit(228);
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // ИЗМЕНЯЕТ КОНСТАНТУ HERO_CHAR
+        int Get_hero_id(char hero_char){
+        switch  (hero_char){
+            case '!':
+                return MAN_MANIFESTO;
+            case '@':
+                return DIAMOND_DOG;
+            case '^':
+                return YARDBIRD;
+            case '$':
+                return CAPITALIST;
+            case '>':
+                return BIRDMAN;
+            case '%':
+                return BANKIR;
+            case '<':
+                return BLUEBIRD;
+            default:
+                exit(1);
+        }
+    }
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //
+        void Launch_Results_menu(){
+            double best_score, worst_score, chosen_hero;
+            int arrow(0);
+            bool not_back(true);
+            char direction;
+
+            while (not_back) {
+
+                ifstream cin_score("score.txt");
+                cin_score >> best_score >> worst_score;
+                cin_score.close();
+
+                Print_text_between_lines("Results");
+                cout << "Best score: " << best_score << endl;
+                cout << "Worst score: " << worst_score << "\n\n";
+
+                if (arrow == 0) cout << '~';
+                cout << "Reset score" << endl;
+                if (arrow == 1) cout << '~';
+                cout << "Back to menu" << endl;
+
+                direction = Read_direction();
+
+                switch (direction) {
+                    case 'W':
+                        arrow--;
+                        break;
+                    case 'S':
+                        arrow++;
+                        break;
+                    case ENTER:
+                        bool not_answer(true);
+                        int chosen_arrow(0);
+                        if (arrow == 0) {
+
+                            while (not_answer) {
+                                int chosen_direction;
+                                system("cls");
+                                Print_text_between_lines("Results");
+                                cout << "Do you really want to do it?" << "\n\n";
+                                if (chosen_arrow == 0) cout << "~";
+                                cout << "No" << endl;
+                                if (chosen_arrow == 1) cout << "~";
+                                cout << "Yes";
+
+                                chosen_direction = Read_direction();
+
+                                switch (chosen_direction) {
+                                    case 'W':
+                                        chosen_arrow--;
+                                        break;
+                                    case 'S':
+                                        chosen_arrow++;
+                                        break;
+                                    case ENTER:
+                                        if (chosen_arrow == 1) {
+                                            // ОБНУЛЯЕМ СЧЁТ
+                                            ofstream cout_score("score.txt");
+                                            cout_score << "0 0 ";
+                                            cout_score.close();
+                                        }
+                                        not_answer = false;
+                                        break;
+                                }
+
+                                if (chosen_arrow == -1) chosen_arrow = 1;
+                                if (chosen_arrow == 2) chosen_arrow = 0;
+
+                            }
+
+                        }
+                        else if (arrow == 1){
+                            not_back = false;
+                        }
+                        break;
+                }
+
+                if (arrow == -1) arrow = 1;
+                if (arrow == 2) arrow = 0;
+
+                system("cls");
+            }
         }
 };
 
 
-
-
-
 int main() {
-
-    bool not_escape = true;
-
-    object hero; // ОБЪЕКТ ПЕРСОНАЖ
-    double best_score = 0,
-           old_score = 0;
-
-    int level_size_w = 7,
-        level_size_h = 5;
-    // ОТКРЫВАЕМ ПОТОК, СЧИТЫВАЕМ ЛУЧШИЙ СЧЁТ, ЗАКРЫВАЕМ ЕГО
-    ifstream cin_score("score.txt");
-    cin_score >> best_score;
-    cin_score.close();
-
-    while(not_escape && (hero.Get_healthbar() != 0)) {
-
-        cout << "Level is loading...";
-        level new_level;
-        if (hero.Get_level_number() % 3 == 0) level_size_h += 2;
-        if (hero.Get_level_number() % 2 == 0) level_size_w += 5;
-
-
-        new_level.Create_map(level_size_h, level_size_w);
-        new_level.Fill_sidewinder_maze();
-        new_level.Create_distance_map();
-        new_level.Init_hero(hero);
-        new_level.Lee_algorithm(0, NULL, hero);
-        new_level.Init_destination(hero);
-        hero.Inc_level();
-        hero.Initializate_movement_count();
-        system("cls");
-
-        while ((not_escape) && (hero.Get_healthbar() != 0) && ((hero.Get_rotation().Y != new_level.Get_destination().Y) ||
-                                                               (hero.Get_rotation().X != new_level.Get_destination().X))){
-            cout << "Level " << hero.Get_level_number() << endl;
-            cout << "Your score is " << setprecision(4) << setw(4) << fixed <<setfill('0') << left << hero.Get_score()
-                              << " (" << showpos << setprecision(4) << setw(4) << fixed << setfill('0') << left  << hero.Get_score() - old_score << " - for last level)" << endl << noshowpos;
-            cout << "The best score " << best_score << endl;
-            cout << "You did " << hero.Get_movement_count() << " steps" << endl;
-            cout << "The best way containe " << new_level.Get_the_best_way() << " steps"  << endl;
-            cout << "Life: " << hero.Print_healthbar() << endl;
-            new_level.Print_map();
-
-            hero.Read_direction();
-            not_escape = (hero.Get_direction() != ESCAPE);
-            if (new_level.Was_movement(hero)) {
-                hero.Inc_movement_count();
-            }
-            else{
-                hero.Dec_health();
-            }
-
-            system("cls");
-        }
-
-
-        old_score = hero.Get_score(); // Запоминаем старое значение.
-
-        hero.Change_score(new_level.Get_the_best_way());
-        if (hero.Get_score() > best_score){
-            best_score = hero.Get_score();
-        }
-
-
-        if (hero.Get_healthbar() == 0 ){
-            Print_dash(strlen("I Know, It's Over..."));
-            cout << endl;
-            cout << "I Know, It's Over..." ;
-            cout << endl;
-            Print_dash(strlen("I Know, It's Over..."));
-            cout << endl;
-        }
-        else {
-            Print_dash(strlen("To move on to the next level press enter"));
-            cout << endl;
-            cout << "To move on to the next level press enter";
-            cout << endl;
-            Print_dash(strlen("To move on to the next level press enter"));
-        }
-        cout << endl;
-
-        cout << "Level " << hero.Get_level_number() << endl;
-        cout << "Your score is " << setprecision(4) << setw(4) << fixed <<setfill('0') << left << hero.Get_score()
-             << " (" << showpos << setprecision(4) << setw(4) << fixed << setfill('0') << left  << hero.Get_score() - old_score << " - for this level)" << endl << noshowpos;
-        cout << "The best score " << best_score << endl;
-        cout << "You did " << hero.Get_movement_count() << " steps" << endl;
-        cout << "The best way containe " << new_level.Get_the_best_way() << " steps"  << endl;
-        cout << "Life: " << hero.Print_healthbar() << endl;
-
-        new_level.Pave_direction({new_level.Get_destination().Y, new_level.Get_destination().X}, hero);
-        new_level.Print_map();
-        cout << endl;
-        if (hero.Get_healthbar() == 0 ){
-            cout << endl;
-            cout << "* Press enter to exit";
-        }
-
-
-        while (getch() != ENTER);
-        system("cls");
-
-    }
-
-
-    cout << '\n';
-    ofstream cout_score("score.txt");
-    cout_score << best_score;
-    cout_score.close();
+    main_menu menu;
+    menu.Launch_menu();
     return 0;
 }
