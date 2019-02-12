@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <stdlib.h>
 #include <vector>
+#include <random>
 #include <cstdlib>
 using namespace std;
 
@@ -30,16 +31,16 @@ char HERO_CHAR('!');
 #define KEY_LEFT 'A'
 #define KEY_RIGHT 'D'
 #define WALL_CHAR '#'
+#define BUSH_CHAR ' '
 #define SPACE_CHAR '_'
-#define DESTINATION_CHAR 'X'
-#define POINTER char(250)
+#define DESTINATION_CHAR 'O'
 
 
 #define ESCAPE 27
 #define ENTER 13
 
-#define WALL 99999999
-#define INFINITY 8888888
+#define WALL 999999
+#define INFINITY 888888
 
 void Print_text_between_lines(string text){
     for (int i = 0; i < text.size(); i++){
@@ -253,7 +254,7 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ПРОВЕРЯЕТ, СТОИТ ЛИ ЭТОТ sign В ПОЗИЦИИ point
     bool Is_this_sign(point coordinate) const{
-        return ((map[coordinate.Y][coordinate.X] != SPACE_CHAR) && (map[coordinate.Y][coordinate.X] != WALL_CHAR));
+        return ((map[coordinate.Y][coordinate.X] != SPACE_CHAR) && (map[coordinate.Y][coordinate.X] != WALL_CHAR) && (map[coordinate.Y][coordinate.X] != BUSH_CHAR));
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -264,22 +265,21 @@ public:
 
         // ЛИШЬ ОДНА КЛЕТКА БУДЕТ ОТМЕЧЕНА
         if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y+1, old_coordinate.X}, hero));
-            else
+        else
         if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y-1, old_coordinate.X}, hero));
-            else
+        else
         if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y, old_coordinate.X+1}, hero));
-            else
+        else
         if (Mark_point_in_direction(old_coordinate, {old_coordinate.Y, old_coordinate.X-1}, hero));
 
         if (distance_map[old_coordinate.Y][old_coordinate.X] == 0){
 
+            map[old_coordinate.Y][old_coordinate.X] = 'S';
+            map[destination.Y][destination.X] = 'F';
+
             for (int i = 0; i < hight; i++){
                 for (int j = 0; j < width; j++){
                     if (map[i][j] == '+') {
-
-
-                        map[old_coordinate.Y][old_coordinate.X] = 'S';
-                        map[destination.Y][destination.X] = 'F';
 
                         if (Is_this_sign(Get_correct_coordinates({i-1, j})) && Is_this_sign(Get_correct_coordinates({i+1, j}))){
                             map[i][j] = VERTICAL_WAY;
@@ -375,8 +375,14 @@ public:
         Correct_coordinates(new_rotate);
 
         if (map[new_rotate.Y][new_rotate.X] != WALL_CHAR){
-            map[new_rotate.Y][new_rotate.X] = HERO_CHAR;
-            map[hero.Get_rotation().Y][hero.Get_rotation().X] = SPACE_CHAR;
+
+            if (map[new_rotate.Y][new_rotate.X] != BUSH_CHAR){
+                map[new_rotate.Y][new_rotate.X] = HERO_CHAR;
+            }
+
+            if (map[hero.Get_rotation().Y][hero.Get_rotation().X] != BUSH_CHAR){
+                map[hero.Get_rotation().Y][hero.Get_rotation().X] = SPACE_CHAR;
+            }
             hero.Change_rotation({new_rotate.Y, new_rotate.X});
             return true;
         }
@@ -387,7 +393,6 @@ public:
     // ИНИЦИАЛИЗАЦИЯ РАСПЛОЖЕНИЯ КЛАДА
     void Init_destination(const object hero){
         int count = 0, max_distance = -1;
-        srand(time(NULL));
         while (count != 40) {
 
             int x = rand() % width;
@@ -412,7 +417,6 @@ public:
     void Init_hero(object& hero) {
         bool flag = true;
         while (flag) {
-            srand(time(NULL));
             int x = rand() % width;
             int y = rand() % hight;
             if (map[y][x] == SPACE_CHAR) {
@@ -530,6 +534,50 @@ public:
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // СОЗДАНИЕ КУСТВОВ
+    void Create_bushes(int count, point bush){
+
+        map[bush.Y][bush.X] = BUSH_CHAR;
+
+        if (count == 0){
+            return;
+        }
+        else{
+
+            bool is_near(false);
+
+            if ((map[Get_correct_coordinates({bush.Y-1, bush.X}).Y][Get_correct_coordinates({bush.Y-1, bush.X}).X] == SPACE_CHAR) && ((rand()%100) <10)){
+                bush = Get_correct_coordinates({bush.Y-1, bush.X});
+                is_near = true;
+            }
+            else if ((map[Get_correct_coordinates({bush.Y+1, bush.X}).Y][Get_correct_coordinates({bush.Y+1, bush.X}).X] == SPACE_CHAR) && ((rand()%100) < 20)){
+                bush = Get_correct_coordinates({bush.Y+1, bush.X});
+                is_near = true;
+            }
+            else if ((map[Get_correct_coordinates({bush.Y, bush.X+1}).Y][Get_correct_coordinates({bush.Y, bush.X+1}).X] == SPACE_CHAR) && ((rand()%100) < 30)){
+                bush = Get_correct_coordinates({bush.Y, bush.X+1});
+                is_near = true;
+            }
+            else if ((map[Get_correct_coordinates({bush.Y, bush.X-1}).Y][Get_correct_coordinates({bush.Y, bush.X-1}).X] == SPACE_CHAR) && ((rand()%100) <40)){
+                bush = Get_correct_coordinates({bush.Y+1, bush.X});
+                is_near = true;
+            }
+
+            if (is_near == false){
+                while (map[bush.Y][bush.X] != SPACE_CHAR) {
+                    bush.Y = rand() % hight;
+                    bush.X = rand() % width;
+                }
+            }
+
+            Create_bushes(count-1, bush);
+        }
+
+
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // СОЗДАНИЕ И ИНИЦИАЛИЗИРОВАНИЕ distance_map
     void Create_distance_map(){
 
@@ -547,6 +595,9 @@ public:
                     case SPACE_CHAR:
                         distance_map[i][j] = INFINITY;
                         break;
+                    case BUSH_CHAR:
+                        distance_map[i][j] = INFINITY;
+                        break;
                     default:
                         distance_map[i][j] = 0;
                         break;
@@ -560,7 +611,6 @@ public:
     void Fill_bineary_maze() {
 
         int i, j, direction;
-        srand(time(NULL));
         for (i = 0; i < hight; i++){
             for (j = 0; j < width; j++){
                 map[i][j] = WALL_CHAR;
@@ -593,7 +643,6 @@ public:
         int i, j;
         bool carve;
 
-        srand(time(NULL));
 
         for (i = 0; i < hight; i++) {
             for (j = 0; j < width; j++) {
@@ -661,11 +710,11 @@ class game{
 private:
     int level_size_hight, level_size_width;
     double best_score, last_score, worse_score;
-    bool not_escape;
+    bool not_escape, end_of_game;
     object hero;
 
 public:
-    game(): level_size_hight(5), level_size_width(7), last_score(0), not_escape(true) {
+    game(): level_size_hight(5), level_size_width(7), last_score(0), not_escape(true), end_of_game(false) {
         ifstream cin_score("score.txt");
         cin_score >> best_score >> worse_score;
         cin_score.close();
@@ -673,7 +722,7 @@ public:
 
     void Launch_new_game(){
 
-        while(not_escape && (hero.Get_healthbar() != 0)) {
+        while(not_escape && (hero.Get_healthbar() != 0) && (end_of_game == false)) {
 
             cout << "Level is loading...";
             level new_level;
@@ -683,6 +732,7 @@ public:
 
             new_level.Create_map(level_size_hight, level_size_width);
             new_level.Fill_sidewinder_maze();
+            //new_level.Create_bushes(int(new_level.Get_hight()*new_level.Get_width()*0.21),{rand()%new_level.Get_hight(),rand()%new_level.Get_width()});
             new_level.Create_distance_map();
             new_level.Init_hero(hero);
             new_level.Lee_algorithm(0, NULL, hero);
@@ -691,7 +741,7 @@ public:
             hero.Initializate_movement_count();
             system("cls");
 
-            while ((not_escape) && (hero.Get_healthbar() != 0) && ((hero.Get_rotation().Y != new_level.Get_destination().Y) ||
+            while ((not_escape) && (hero.Get_healthbar() != 0) &&((hero.Get_rotation().Y != new_level.Get_destination().Y) ||
                                                                    (hero.Get_rotation().X != new_level.Get_destination().X))){
                 cout << "Level " << hero.Get_level_number() << "\n\n";
                 cout << "Your score: " << setprecision(4) << setw(4) << fixed <<setfill('0') << left << hero.Get_score()
@@ -709,7 +759,7 @@ public:
                     hero.Inc_movement_count();
                 }
                 else if ((hero.Get_direction() == 'A' ) || (hero.Get_direction() == 'D') ||
-                        (hero.Get_direction() == 'S') || (hero.Get_direction() == 'W')){
+                         (hero.Get_direction() == 'S') || (hero.Get_direction() == 'W')){
                     hero.Dec_health();
                 }
 
@@ -732,19 +782,25 @@ public:
             }
 
 
+            if (hero.Get_level_number() == 14){
+                end_of_game = true;
+            }
+
             if (hero.Get_healthbar() == 0 ){
                 Print_text_between_lines("I Know, It's Over...");
             }
             else {
-                if (not_escape == true) {
+                if (not_escape == true && (end_of_game == false)) {
                     Print_text_between_lines("To move on to the next level press enter");
                 }
                 else{
                     Print_text_between_lines("To return to menu press enter");
                 }
             }
-            cout << endl;
 
+            if (end_of_game == true) {
+                cout << "You passed the game!!" << "\n\n";
+            }
             cout << "Level " << hero.Get_level_number() << endl;
             cout << "Your score:" << setprecision(4) << setw(4) << fixed <<setfill('0') << left << hero.Get_score()
                  << " (" << showpos << setprecision(4) << setw(4) << fixed << setfill('0') << left  << hero.Get_score() - last_score << " - for this level)" << endl << noshowpos;
@@ -761,7 +817,6 @@ public:
                 cout << "* Press enter to exit";
             }
 
-
             while (getch() != ENTER);
             system("cls");
 
@@ -777,342 +832,381 @@ public:
 
 class main_menu{
 
-    private:
-        enum {NEW_GAME, HEROES, RESULTS, EXIT}; // ВОПРОС, ОНИ ИСПОЛЬЗУЮТСЯ В РАЗНЫЕ МЕТОДАХ, ХОТЯ НАЗВАНИЯ ПЕРЕСЕКАЮТСЯ!
-        enum {MAN_MANIFESTO, DIAMOND_DOG, YARDBIRD, CAPITALIST, BIRDMAN, BANKIR, BLUEBIRD, BACK_TO_MENU};
+private:
+    enum class MAIN_MENU  {NEW_GAME, HEROES, RESULTS, EXIT};
+    enum class HERO_MENU{MAN_MANIFESTO, DIAMOND_DOG, YARDBIRD, CAPITALIST, BIRDMAN, BANKIR, BLUEBIRD, BACK_TO_MENU};
+    enum class RESULT_MENU{RESET_SCORE, BACK_TO_MENU};
+    enum class RESET_MENU{NO, YES};
+public:
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // КОНСТРУКТОР, ИНИЦИАЛИЗИРУЮЙИЙ HERO_CHAR
+    main_menu(){
+        HERO_MENU chosen_hero;
+        ifstream cin_hero("hero.txt");
+        char hero_id;
+        cin_hero >> hero_id;
+        chosen_hero = Get_hero_id(hero_id);
+        Change_HERO_CHAR(chosen_hero);
+        cin_hero.close();
+        srand(time(NULL));
+    }
 
-    public:
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // КОНСТРУКТОР, ИНИЦИАЛИЗИРУЮЙИЙ HERO_CHAR
-        main_menu(){
-            int chosen_hero;
-            ifstream cin_score("hero.txt");
-            cin_score >> chosen_hero;
-            Change_HERO_CHAR(chosen_hero);
-            cin_score.close();
-        }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ДЕСТРУКТОР
+    ~main_menu(){
+        int hero_id;
+        ifstream cin_hero("hero.txt");
+        cin_hero >> hero_id;
+        cin_hero.close();
+        Get_hero_id(HERO_CHAR);
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ЗАПУСКАЕТ ГЛАВНОЕ МЕНЮ
+    void Launch_menu() {
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // ДЕСТРУКТОР
-        ~main_menu(){
-            int hero_id;
-            ifstream cin_hero("hero.txt");
-            cin_hero >> hero_id;
-            cin_hero.close();
-            Get_hero_id(HERO_CHAR);
-        }
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // ЗАПУСКАЕТ ГЛАВНОЕ МЕНЮ
-        void Launch_menu() {
+        bool not_exit(true);
+        MAIN_MENU chosen_elem(MAIN_MENU::NEW_GAME);
+        while (not_exit) {
 
-            bool not_exit(true);
-            int chosen_elem = 0;
-            while (not_exit) {
-
-                Print_text_between_lines("OrJann");
+            Print_text_between_lines("OrJann");
 
 
-                if (chosen_elem == NEW_GAME) {
-                    cout << '~';
+            if (chosen_elem == MAIN_MENU::NEW_GAME) {
+                cout << '~';
+            }
+            cout << "New game" << endl;
+
+            if (chosen_elem == MAIN_MENU::HEROES) {
+                cout << '~';
+            }
+            cout << "Heroes" << endl;
+
+
+            if (chosen_elem == MAIN_MENU::RESULTS) {
+                cout << '~';
+            }
+            cout << "Results" << endl;
+
+            if (chosen_elem == MAIN_MENU::EXIT) {
+                cout << '~';
+            }
+            cout << "Exit";
+
+
+            char direction = Read_direction();
+
+            system("cls");
+
+            if (direction == 'W') {
+                if (chosen_elem == MAIN_MENU::NEW_GAME){
+                    chosen_elem = MAIN_MENU::EXIT;
                 }
-                cout << "New game" << endl;
-
-                if (chosen_elem == HEROES) {
-                    cout << '~';
+                else {
+                    chosen_elem = static_cast<MAIN_MENU>(static_cast<int>(chosen_elem) - 1);
                 }
-                cout << "Heroes" << endl;
+            }
 
 
-                if (chosen_elem == RESULTS) {
-                    cout << '~';
+            if (direction == 'S') {
+                if (chosen_elem == MAIN_MENU::EXIT){
+                    chosen_elem = MAIN_MENU::NEW_GAME;
                 }
-                cout << "Results" << endl;
-
-                if (chosen_elem == EXIT) {
-                    cout << '~';
+                else {
+                    chosen_elem = static_cast<MAIN_MENU>(static_cast<int>(chosen_elem) + 1);
                 }
-                cout << "Exit";
+            }
 
 
-                char direction = Read_direction();
+            if (direction == ENTER) {
+                switch (chosen_elem) {
 
-                system("cls");
-
-                if (direction == 'W') {
-                    chosen_elem--;
-                }
-                if (direction == 'S') {
-                    chosen_elem++;
-                }
-                if (chosen_elem == -1) chosen_elem = EXIT;
-                if (chosen_elem == 4) chosen_elem = NEW_GAME;
-                if (direction == ENTER) {
-                    switch (chosen_elem) {
-
-                        case NEW_GAME:{
-                            game new_game;
-                            new_game.Launch_new_game();
-                            break;
-                        }
-                        case HEROES:{
-                            Launch_heroes_menu();
-                            break;
-                        }
-                        case RESULTS:{
-                            Launch_Results_menu();
-                            break;
-                        }
-                        case EXIT:{
-                            not_exit = false;
-                        }
-
+                    case (MAIN_MENU::NEW_GAME):{
+                        game new_game;
+                        new_game.Launch_new_game();
+                        break;
                     }
+                    case (MAIN_MENU::HEROES):{
+                        Launch_heroes_menu();
+                        break;
+                    }
+                    case (MAIN_MENU::RESULTS):{
+                        Launch_Results_menu();
+                        break;
+                    }
+                    case (MAIN_MENU::EXIT):{
+                        not_exit = false;
+                    }
+
                 }
             }
         }
+    }
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //
-        void Launch_heroes_menu(){
-            int arrow(0), chosen_hero(Get_hero_id(HERO_CHAR));
-            bool not_escape(true);
-            char direction('8');
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    void Launch_heroes_menu(){
+        HERO_MENU chosen_hero(static_cast<HERO_MENU>(Get_hero_id(HERO_CHAR))),
+                arrow(HERO_MENU::MAN_MANIFESTO);
+        bool not_escape(true);
+        char direction('8');
 
-            while (direction != ESCAPE) {
+        while (direction != ESCAPE) {
 
-                Print_text_between_lines("Heroes");
+            Print_text_between_lines("Heroes");
 
-                if (arrow == MAN_MANIFESTO) cout << '~';
+            if (arrow == HERO_MENU::MAN_MANIFESTO) cout << '~';
 
-                cout << "Man-manifesto(!)";
-                if (chosen_hero == MAN_MANIFESTO) cout << " <-";
+            cout << "Man-manifesto(!)";
+            if (chosen_hero == HERO_MENU::MAN_MANIFESTO) cout << " <-";
 
-                cout << endl;
+            cout << endl;
 
-                if (arrow == DIAMOND_DOG) cout << '~';
-                cout << "Diamond dog(@)";
+            if (arrow == HERO_MENU::DIAMOND_DOG) cout << '~';
+            cout << "Diamond dog(@)";
 
-                if (chosen_hero == DIAMOND_DOG) cout << " <-";
+            if (chosen_hero == HERO_MENU::DIAMOND_DOG) cout << " <-";
 
-                cout << endl;
+            cout << endl;
 
-                if (arrow == YARDBIRD) cout << '~';
-                cout << "Yardbird(^)";
+            if (arrow == HERO_MENU::YARDBIRD) cout << '~';
+            cout << "Yardbird(^)";
 
-                if (chosen_hero == YARDBIRD) cout << " <-";
+            if (chosen_hero == HERO_MENU::YARDBIRD) cout << " <-";
 
-                cout << endl;
-
-
-                if (arrow == CAPITALIST) cout << '~';
-                cout << "Capitalist($)";
-
-                if (chosen_hero == CAPITALIST) cout << " <-";
-
-                cout << endl;
+            cout << endl;
 
 
-                if (arrow == BIRDMAN) cout << '~';
-                cout << "Birdman(>)";
+            if (arrow == HERO_MENU::CAPITALIST) cout << '~';
+            cout << "Capitalist($)";
 
-                if (chosen_hero == BIRDMAN) cout << " <-";
+            if (chosen_hero == HERO_MENU::CAPITALIST) cout << " <-";
 
-                cout << endl;
-
-
-                if (arrow == BANKIR) cout << '~';
-                cout << "Bankir(%)";
-
-                if (chosen_hero == BANKIR) cout << " <-";
-
-                cout << endl;
+            cout << endl;
 
 
+            if (arrow == HERO_MENU::BIRDMAN) cout << '~';
+            cout << "Birdman(>)";
 
-                if (arrow == BLUEBIRD) cout << '~';
-                cout << "Bluebird(<)";
+            if (chosen_hero == HERO_MENU::BIRDMAN) cout << " <-";
 
-                if (chosen_hero == BLUEBIRD) cout << " <-";
+            cout << endl;
 
-                cout << "\n\n";
 
-                if (arrow == BACK_TO_MENU) cout << '~';
-                cout << "Back to menu";
+            if (arrow == HERO_MENU::BANKIR) cout << '~';
+            cout << "Bankir(%)";
 
-                direction = Read_direction();
-                switch (direction){
-                    case 'W':
-                        arrow--;
-                        break;
-                    case 'S':
-                        arrow++;
-                        break;
-                    case ENTER:
-                        if (arrow == 7){
-                            direction = ESCAPE;
-                        }
-                        else{
-                            chosen_hero = arrow;
-                            Change_HERO_CHAR(chosen_hero);
+            if (chosen_hero == HERO_MENU::BANKIR) cout << " <-";
 
-                            ofstream cout_hero("hero.txt");
-                            cout_hero << Get_hero_id(HERO_CHAR);
-                            cout_hero.close();
-                        }
-                        break;
-                }
-                if (arrow == -1) arrow = 7;
-                if (arrow == 8) arrow = 0;
+            cout << endl;
 
-                system("cls");
+
+
+            if (arrow == HERO_MENU::BLUEBIRD) cout << '~';
+            cout << "Bluebird(<)";
+
+            if (chosen_hero == HERO_MENU::BLUEBIRD) cout << " <-";
+
+            cout << "\n\n";
+
+            if (arrow == HERO_MENU::BACK_TO_MENU) cout << '~';
+            cout << "Back to menu";
+
+            direction = Read_direction();
+            switch (direction){
+                case 'W':
+                    if (arrow == HERO_MENU::MAN_MANIFESTO){
+                        arrow = HERO_MENU::BACK_TO_MENU;
+                    }
+                    else {
+                        arrow = static_cast<HERO_MENU>(static_cast<int>(arrow) - 1);
+                    }
+                    break;
+                case 'S':
+                    if (arrow == HERO_MENU::BACK_TO_MENU){
+                        arrow = HERO_MENU::MAN_MANIFESTO;
+                    }
+                    else {
+                        arrow = static_cast<HERO_MENU>(static_cast<int>(arrow) + 1);
+                    }
+                    break;
+                case ENTER:
+                    if (arrow == HERO_MENU::BACK_TO_MENU){
+                        direction = ESCAPE;
+                    }
+                    else{
+                        chosen_hero = arrow;
+                        Change_HERO_CHAR(chosen_hero);
+
+                        ofstream cout_hero("hero.txt");
+                        cout_hero << static_cast<int>(Get_hero_id(HERO_CHAR));
+                        cout_hero.close();
+                    }
+                    break;
             }
 
-
-        }
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // ИЗМЕНЯЕТ КОНСТАНТУ HERO_CHAR
-        void Change_HERO_CHAR(int chosen_hero){
-            switch  (chosen_hero){
-                case MAN_MANIFESTO:
-                    HERO_CHAR = '!';
-                    break;
-                case DIAMOND_DOG:
-                    HERO_CHAR = '@';
-                    break;
-                case YARDBIRD:
-                    HERO_CHAR = '^';
-                    break;
-                case CAPITALIST:
-                    HERO_CHAR = '$';
-                    break;
-                case BIRDMAN:
-                    HERO_CHAR = '>';
-                    break;
-                case BANKIR:
-                    HERO_CHAR = '%';
-                    break;
-                case BLUEBIRD:
-                    HERO_CHAR = '<';
-                    break;
-                default:
-                    exit(228);
-            }
+            system("cls");
         }
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // ИЗМЕНЯЕТ КОНСТАНТУ HERO_CHAR
-        int Get_hero_id(char hero_char){
+
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ИЗМЕНЯЕТ КОНСТАНТУ HERO_CHAR
+    void Change_HERO_CHAR(HERO_MENU chosen_hero){
+        switch  (chosen_hero){
+            case HERO_MENU::MAN_MANIFESTO:
+                HERO_CHAR = '!';
+                break;
+            case HERO_MENU::DIAMOND_DOG:
+                HERO_CHAR = '@';
+                break;
+            case HERO_MENU::YARDBIRD:
+                HERO_CHAR = '^';
+                break;
+            case HERO_MENU::CAPITALIST:
+                HERO_CHAR = '$';
+                break;
+            case HERO_MENU::BIRDMAN:
+                HERO_CHAR = '>';
+                break;
+            case HERO_MENU::BANKIR:
+                HERO_CHAR = '%';
+                break;
+            case HERO_MENU::BLUEBIRD:
+                HERO_CHAR = '<';
+                break;
+            default:
+                exit(228);
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ИЗМЕНЯЕТ КОНСТАНТУ HERO_CHAR
+    HERO_MENU Get_hero_id(char hero_char){
         switch  (hero_char){
             case '!':
-                return MAN_MANIFESTO;
+                return HERO_MENU::MAN_MANIFESTO;
             case '@':
-                return DIAMOND_DOG;
+                return HERO_MENU::DIAMOND_DOG;
             case '^':
-                return YARDBIRD;
+                return HERO_MENU::YARDBIRD;
             case '$':
-                return CAPITALIST;
+                return HERO_MENU::CAPITALIST;
             case '>':
-                return BIRDMAN;
+                return HERO_MENU::BIRDMAN;
             case '%':
-                return BANKIR;
+                return HERO_MENU::BANKIR;
             case '<':
-                return BLUEBIRD;
+                return HERO_MENU::BLUEBIRD;
             default:
                 exit(1);
         }
     }
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //
-        void Launch_Results_menu(){
-            double best_score, worst_score, chosen_hero;
-            int arrow(0);
-            bool not_back(true);
-            char direction;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    void Launch_Results_menu(){
+        double best_score, worst_score, chosen_hero;
+        RESULT_MENU arrow(RESULT_MENU::RESET_SCORE);
+        bool not_back(true);
+        char direction;
 
-            while (not_back) {
+        while (not_back) {
 
-                ifstream cin_score("score.txt");
-                cin_score >> best_score >> worst_score;
-                cin_score.close();
+            ifstream cin_score("score.txt");
+            cin_score >> best_score >> worst_score;
+            cin_score.close();
 
-                Print_text_between_lines("Results");
-                cout << "Best score: " << best_score << endl;
-                cout << "Worst score: " << worst_score << "\n\n";
+            Print_text_between_lines("Results");
+            cout << "Best score: " << best_score << endl;
+            cout << "Worst score: " << worst_score << "\n\n";
 
-                if (arrow == 0) cout << '~';
-                cout << "Reset score" << endl;
-                if (arrow == 1) cout << '~';
-                cout << "Back to menu" << endl;
+            if (arrow == RESULT_MENU::RESET_SCORE) cout << '~';
+            cout << "Reset score" << endl;
+            if (arrow == RESULT_MENU::BACK_TO_MENU) cout << '~';
+            cout << "Back to menu" << endl;
 
-                direction = Read_direction();
+            direction = Read_direction();
 
-                switch (direction) {
-                    case 'W':
-                        arrow--;
-                        break;
-                    case 'S':
-                        arrow++;
-                        break;
-                    case ENTER:
-                        bool not_answer(true);
-                        int chosen_arrow(0);
-                        if (arrow == 0) {
+            switch (direction) {
+                case 'W':
+                    if (arrow == RESULT_MENU::RESET_SCORE){
+                        arrow = RESULT_MENU::BACK_TO_MENU;
+                    }
+                    else{
+                        arrow = static_cast<RESULT_MENU>(static_cast<int>(arrow) - 1);
+                    }
+                    break;
+                case 'S':
+                    if (arrow == RESULT_MENU::BACK_TO_MENU){
+                        arrow = RESULT_MENU::RESET_SCORE;
+                    }
+                    else{
+                        arrow = static_cast<RESULT_MENU>(static_cast<int>(arrow) + 1);
+                    }
+                    break;
+                case ENTER:
+                    bool not_answer(true);
+                    RESET_MENU reset_arrow(RESET_MENU::NO);
 
-                            while (not_answer) {
-                                int chosen_direction;
-                                system("cls");
-                                Print_text_between_lines("Results");
-                                cout << "Do you really want to do it?" << "\n\n";
-                                if (chosen_arrow == 0) cout << "~";
-                                cout << "No" << endl;
-                                if (chosen_arrow == 1) cout << "~";
-                                cout << "Yes";
+                    if (arrow == RESULT_MENU::RESET_SCORE) {
 
-                                chosen_direction = Read_direction();
+                        while (not_answer) {
+                            int chosen_direction;
+                            system("cls");
+                            Print_text_between_lines("Results");
+                            cout << "Do you really want to do it?" << "\n\n";
+                            if (reset_arrow == RESET_MENU::NO) cout << "~";
+                            cout << "No" << endl;
+                            if (reset_arrow == RESET_MENU::YES) cout << "~";
+                            cout << "Yes";
 
-                                switch (chosen_direction) {
-                                    case 'W':
-                                        chosen_arrow--;
-                                        break;
-                                    case 'S':
-                                        chosen_arrow++;
-                                        break;
-                                    case ENTER:
-                                        if (chosen_arrow == 1) {
-                                            // ОБНУЛЯЕМ СЧЁТ
-                                            ofstream cout_score("score.txt");
-                                            cout_score << "0 0 ";
-                                            cout_score.close();
-                                        }
-                                        not_answer = false;
-                                        break;
-                                }
+                            chosen_direction = Read_direction();
 
-                                if (chosen_arrow == -1) chosen_arrow = 1;
-                                if (chosen_arrow == 2) chosen_arrow = 0;
-
+                            switch (chosen_direction) {
+                                case 'W':
+                                    if (reset_arrow == RESET_MENU::NO){
+                                        reset_arrow = RESET_MENU::YES;
+                                    }
+                                    else{
+                                        reset_arrow = static_cast<RESET_MENU>(static_cast<int>(reset_arrow) - 1);
+                                    }
+                                    break;
+                                case 'S':
+                                    if (reset_arrow == RESET_MENU::YES){
+                                        reset_arrow = RESET_MENU::NO;
+                                    }
+                                    else{
+                                        reset_arrow = static_cast<RESET_MENU>(static_cast<int>(reset_arrow) + 1);
+                                    }
+                                    break;
+                                case ENTER:
+                                    if (reset_arrow == RESET_MENU::YES) {
+                                        // ОБНУЛЯЕМ СЧЁТ
+                                        ofstream cout_score("score.txt");
+                                        cout_score << "0 0 ";
+                                        cout_score.close();
+                                    }
+                                    not_answer = false;
+                                    break;
                             }
-
                         }
-                        else if (arrow == 1){
-                            not_back = false;
-                        }
-                        break;
-                }
 
-                if (arrow == -1) arrow = 1;
-                if (arrow == 2) arrow = 0;
-
-                system("cls");
+                    }
+                    else if (arrow == RESULT_MENU::BACK_TO_MENU){
+                        not_back = false;
+                    }
+                    break;
             }
+
+            system("cls");
         }
+    }
 };
 
 
